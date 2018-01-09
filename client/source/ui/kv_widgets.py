@@ -53,6 +53,14 @@ class FailedSubmissionPopup(ModalView):
         self.ids.failed_submission_label.text = message
 
 
+class ServerShutdownPopup(ModalView):
+    def __init__(self, **kwargs):
+        super(ModalView, self).__init__(**kwargs)
+
+    def on_dismiss(self):
+        self.quit()
+
+
 class SubmissionButton(Button):
     pass
 

@@ -12,60 +12,71 @@
 
         BoxLayout:
             id: chat_layout
-#            height: 90
-#            orientation: 'horizontal'
-#            padding: 0
-#            size_hint: (1, None)
+            orientation: 'vertical'
 
-            TextInput:
-                id: message
-                use_bubble: True
-                write_tab: False
-                on_text_validate: app.root.client_protocol.send_message(message.text)
+            BoxLayout:
+                id: chat_top
+                size_hint_x: 1
+                size_hint_y: 0.15
+                padding: 10
+                spacing: 10
 
-            Button:
-                text: 'Send'
-                on_press: app.root.client_protocol.send_message(message.text)
-                size_hint: (0.3, 1)
+                TextInput:
+                    id: message
+                    size_hint_x: 0.85
+                    use_bubble: True
+                    write_tab: False
+                    on_text_validate: app.root.client_protocol.send_message(message.text)
 
-            TextInput:
-                background_color: (0,0,0,1)
-                foreground_color: (1,1,1,1)
-                size_hint_y: 1
-        #        height: self.texture_size[1]
-                text_size: self.width, None
-                use_bubble: True
-                text: root.chat_history
-                readonly: True
+                Button:
+                    id: send_button
+                    size_hint_x: 0.15
+                    text: 'Send'
+                    on_press: app.root.client_protocol.send_message(message.text)
 
-#            ScrollableLabel:
-#                id: chat_logs
-#                text: 'fiddle stix' if root.parent is None else root.chat_history
+            BoxLayout:
+                id: chat_bottom
+                size_hint_x: 1
 
-            ScrollView:
-                id: user_list_container
+                TextInput:
+                    background_color: (0,0,0,1)
+                    foreground_color: (1,1,1,1)
+                    size_hint_x: 0.85
+                    text_size: self.width, None
+                    use_bubble: True
+                    text: root.chat_history
+                    readonly: True
 
                 BoxLayout:
+                    id: user_list_box
                     orientation: 'vertical'
-                    id: user_list
+                    size_hint_x: 0.15
+
+                    Label:
+                        text: "Connected Users"
+                        size_hint_y: 0.1
+                        pos_hint: {'center_x': 0.4}
+                    ScrollView:
+                        id: user_list_container
+#                        size_hint_y: 0.9
+                        size_hint_x: 1
+                        size_hint_y: None
+                        BoxLayout:
+                            orientation: 'vertical'
+                            size_hint: None, None
+                            id: user_list
 
 
 
 
 <ScrollableLabel@ScrollView>:
     text: 'SCROLLABLELABEL'
-#    Label:
-#        size_hint_y: None
-#        height: self.texture_size[1]
-#        text_size: self.width, None
-#        text: root.text
+
     TextInput:
         size_hint_y: 1
-#        height: self.texture_size[1]
         text_size: self.width, None
         use_bubble: True
         text: root.text
-#        readonly: True
 
 <ChatLabel@Label>:
     text: 'PLACEHOLDER'
@@ -94,6 +105,15 @@
 #    pos_hint_y: 0 if self.touch is None else self.touch.spos[1]
 
 <ModalPopupButton@Button>:
+#    size_hint: None, None
+    height: '10dp'
+    width: '10dp'
 
+<ServerShutdownPopup@ModalView>:
+    size_hint: None, None
+    height: '50dp'
+    width: '200dp'
 
+    Label:
+        text: "Server shutdown! You will now be disconnected."
 

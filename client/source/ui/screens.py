@@ -1,7 +1,7 @@
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.clock import Clock
 from kivy.properties import StringProperty
-from client.source.ui.kv_widgets import ModalPopupButton, SubmissionPopup, FailedSubmissionPopup
+from client.source.ui.kv_widgets import ModalPopupButton, SubmissionPopup, FailedSubmissionPopup, ServerShutdownPopup
 
 
 # ====================================
@@ -88,9 +88,16 @@ class ChatRoomScreen(Screen):
             self.user_list = self.parent.client_protocol.user_list
             self.update_user_list_buttons()
 
+        if self.parent.client_protocol.server_shutdown:
+            self.server_shutdown()
+
     def next_message_private(self, user):
         current_text = self.ids.message.text
         self.ids.message.text = ''
         current_text = "@{}, ".format(user) + current_text
         self.ids.message.text = current_text
 
+    def server_shutdown(self):
+        print("SERVER SHUTDOWN")
+        self.popup = ServerShutdownPopup()
+        self.popup.open()

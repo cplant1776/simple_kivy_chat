@@ -21,7 +21,8 @@ COMMAND_CODE = {
                 "invalid_credentials"   : "nq8ypgDC95LlqCOvygw2",
                 "valid_credentials"     : "aEi6XmQb6rYotD2v3MvQ",
                 "opened_connection"     : "RYqB1X9EOSfMkQpwIC||",
-                "closed_connection"     : "uQgFWQ5icTeDVmoBgoXu"
+                "closed_connection"     : "uQgFWQ5icTeDVmoBgoXu",
+                "server_shutdown"       : "nST1UgKcdDOlrf3ndUYi"
                 }
 
 
@@ -38,6 +39,7 @@ class ClientProtocol(asyncio.Protocol):
         self.login_success = False
         self.invalid_credentials = False
         self.ready_to_connect = False
+        self.server_shutdown = False
 
     def run_listener_thread(self):
         t = threading.Thread(name='listener', target=self.try_to_connect)
@@ -64,14 +66,18 @@ class ClientProtocol(asyncio.Protocol):
     async def listen_for_response(self):
         # while self.authorized:
         while True:
+            try:
                 data = await self.reader.read(MAX_SEND_SIZE)
-                if data:
-                    decrypted_data = self.fernet.decrypt(data)
-                    print("receive: {}".format(decrypted_data))
-                    decoded_data = decrypted_data.decode('utf-8')
-                    route = await self.route_data(decoded_data)
-                else:
-                    break
+            except ConnectionResetError:
+                self.server_shutdown = True
+                break
+            if data:
+                decrypted_data = self.fernet.decrypt(data)
+                print("receive: {}".format(decrypted_data))
+                decoded_data = decrypted_data.decode('utf-8')
+                route = await self.route_data(decoded_data)
+            else:
+                break
 
     async def route_data(self, data):
         if await is_command(data):
@@ -87,6 +93,8 @@ class ClientProtocol(asyncio.Protocol):
             await self.invalid_credentials_routine()
         elif result['type'] == 'valid':
             await self.valid_credentials_routine()
+        elif result['type'] == 'shutdown':
+            self.server_shutdown = True
 
     async def invalid_credentials_routine(self):
         self.ready_to_connect = False

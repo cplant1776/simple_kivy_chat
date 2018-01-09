@@ -11,7 +11,8 @@ COMMAND_CODE = {
                 "invalid_credentials"   : "nq8ypgDC95LlqCOvygw2",
                 "valid_credentials"     : "aEi6XmQb6rYotD2v3MvQ",
                 "opened_connection"     : "RYqB1X9EOSfMkQpwIC||",
-                "closed_connection"     : "uQgFWQ5icTeDVmoBgoXu"
+                "closed_connection"     : "uQgFWQ5icTeDVmoBgoXu",
+                "server_shutdown"       : "nST1UgKcdDOlrf3ndUYi"
                 }
 
 DATABASE_NAME = path.join("database", "chap_app.db")
@@ -92,7 +93,7 @@ class CommandHandler:
     async def save_new_user_credentials(self, message):
         credentials = message.split('||')
         key, salt = db.encrypt_password(credentials[2])
-        new_user = db.add_new_user_credentials((credentials[1], credentials[2], key, salt))
+        new_user = db.add_new_user_credentials((credentials[1], credentials[1], key, salt))
         return new_user
 
     def is_valid_credentials(self, message):

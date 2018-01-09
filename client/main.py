@@ -22,7 +22,7 @@ class ClientApp(App):
     def on_stop(self):
         print("I stopped!")
         self.client_protocol.send_closed_command()
-        os._exit(1)
+        quit()
 
     def build(self):
         thread_shared_data = queue.Queue()
@@ -36,3 +36,8 @@ class ClientApp(App):
 
 if __name__ == "__main__":
     ClientApp().run()
+
+
+# TODO: Move atexit function to a global scale instead of class scale (does nothing at the moment)
+# TODO: gracefully close client when exited
+# TODO: Make chat screen pretty

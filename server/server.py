@@ -3,14 +3,8 @@ from os import path
 from database.my_chat_db import DB
 from command_handler import CommandHandler
 from cryptography.fernet import Fernet
+import atexit
 
-
-
-
-# TODO: Refactor
-#     -break it down into classes. Potentials:
-#           * routing
-#           * command protocols
 
 # ================
 # HIDDEN VARIABLES
@@ -24,7 +18,8 @@ COMMAND_CODE = {
                 "invalid_credentials"   : "nq8ypgDC95LlqCOvygw2",
                 "valid_credentials"     : "aEi6XmQb6rYotD2v3MvQ",
                 "opened_connection"     : "RYqB1X9EOSfMkQpwIC||",
-                "closed_connection"     : "uQgFWQ5icTeDVmoBgoXu"
+                "closed_connection"     : "uQgFWQ5icTeDVmoBgoXu",
+                "server_shutdown"       : "nST1UgKcdDOlrf3ndUYi"
                 }
 
 DATABASE_NAME = path.join("database", "chap_app.db")
@@ -52,6 +47,15 @@ class ChatProtocol(asyncio.Protocol):
         self.user_list = []
         self.fernet = Fernet(FERNET_KEY)
         self.command_handler = CommandHandler(user_database, self.fernet)
+        # atexit.register(self.server_shutdown)
+
+    # def server_shutdown(self):
+    #     print("ballsohard")
+    #     shutdown_command = (COMMAND_FLAG + COMMAND_CODE['server_shutdown']).encode('utf-8')
+    #     encrypted_shutdown_command = self.fernet.encrypt(shutdown_command)
+    #     if self._clients:
+    #         for client in self._clients:
+    #             client.writer.write(encrypted_shutdown_command)
 
     async def handle_input(self, reader, writer):
         while True:
@@ -61,7 +65,8 @@ class ChatProtocol(asyncio.Protocol):
                     encrypted_data = await reader.read(MAX_SEND_SIZE)
                 except ConnectionResetError:
                     print("Improper client shutdown!")
-                    self.user_list = self.command_handler.close_connection(self._clients, writer, self.user_list)
+                    self.user_list = self.command_handler.close_connection(self._clients,
+                                                                           writer, self.user_list)['data']['user_list']
                     break
 
                 # Decrypt data and find who sent it
@@ -92,6 +97,8 @@ class ChatProtocol(asyncio.Protocol):
         elif result['type'] in ['new', 'valid_credentials']:
             current_client = await self.add_new_connection(writer, message)
             await self.update_connected_user_list(current_client)
+            if result['type'] == 'new':
+                self.user_database = db.get_known_users()
         elif result['type'] in ['ignore']:
             pass
 
@@ -129,14 +136,15 @@ class ChatProtocol(asyncio.Protocol):
                 print("is closing: {}".format(client.writer.is_closing()))
 
     def send_private_message(self, message, receiver, sender):
-        message = strip_private_message_handle(message)
-        message = ("@{}, ".format(self.last_message_sender) + message).encode('utf-8')
-        encrypted_message = self.fernet.encrypt(message)
+        receiver_message = prepare_receiver_message(message, self.last_message_sender)
+        sender_message = prepare_sender_message(message)
+        encrypted_receiver_message = self.fernet.encrypt(receiver_message)
+        encrypted_sender_message = self.fernet.encrypt(sender_message)
         if sender_ignored(receiver, self.last_message_sender):
             pass
         else:
-            receiver.writer.write(encrypted_message)
-            sender.write(encrypted_message)
+            receiver.writer.write(encrypted_receiver_message)
+            sender.write(encrypted_sender_message)
 
     async def add_new_connection(self, writer, message):
         username = message.split('||')[1]
@@ -149,8 +157,17 @@ async def is_command(message):
     return message.startswith(COMMAND_FLAG)
 
 
+def prepare_receiver_message(message, sender):
+    result = strip_private_message_handle(message)
+    return ("@{}, ".format(sender) + result).encode('utf-8')
+
+
 def strip_private_message_handle(message):
     return message[message.find(",")+1:]
+
+
+def prepare_sender_message(message):
+    return message[message.find("@"):].encode('utf-8')
 
 
 def sender_ignored(client, sender):
