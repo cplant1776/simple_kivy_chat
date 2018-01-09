@@ -22,6 +22,7 @@ class ClientApp(App):
     def on_stop(self):
         print("I stopped!")
         self.client_protocol.send_closed_command()
+        os._exit(1)
 
     def build(self):
         thread_shared_data = queue.Queue()

@@ -89,7 +89,7 @@ class DB:
         return new_user_entry
 
     @staticmethod
-    def encrypt_password(self, pw, salt=os.urandom(16)):
+    def encrypt_password(pw, salt=os.urandom(16)):
         pw = pw.encode('utf-8')
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
@@ -135,7 +135,7 @@ class DB:
         return correct_credentials
 
     @staticmethod
-    def verified_successfully(self, correct_credentials, password):
+    def verified_successfully(correct_credentials, password):
         password = password.encode('utf-8')
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),

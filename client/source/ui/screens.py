@@ -1,6 +1,5 @@
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.clock import Clock
-from kivy.uix.button import Button
 from kivy.properties import StringProperty
 from client.source.ui.kv_widgets import ModalPopupButton, SubmissionPopup, FailedSubmissionPopup
 

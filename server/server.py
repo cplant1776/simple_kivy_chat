@@ -61,7 +61,7 @@ class ChatProtocol(asyncio.Protocol):
                     encrypted_data = await reader.read(MAX_SEND_SIZE)
                 except ConnectionResetError:
                     print("Improper client shutdown!")
-                    self.user_list = self.command_handler.close_connection(self._clients, writer)
+                    self.user_list = self.command_handler.close_connection(self._clients, writer, self.user_list)
                     break
 
                 # Decrypt data and find who sent it
@@ -71,7 +71,7 @@ class ChatProtocol(asyncio.Protocol):
                 print("Received from {}".format(self.last_message_sender))
 
                 # Determine if it's a new connection
-                if await self.is_command(message):
+                if await is_command(message):
                     await self.execute_command(message, writer)
                 else:
                     self.save_message_to_history(message)
@@ -81,10 +81,6 @@ class ChatProtocol(asyncio.Protocol):
             else:
                 print("Connection closed. . .")
                 break
-
-    @staticmethod
-    async def is_command(message):
-        return message.startswith(COMMAND_FLAG)
 
     async def execute_command(self, message, writer):
         result = await self.command_handler.process_command(message, writer, self._clients, self.user_list)
@@ -126,32 +122,21 @@ class ChatProtocol(asyncio.Protocol):
         message = ("{}: ".format(self.last_message_sender) + message).encode('utf-8')
         encrypted_message = self.fernet.encrypt(message)
         for client in self._clients:
-            if self.sender_ignored(client, self.last_message_sender):
+            if sender_ignored(client, self.last_message_sender):
                 pass
             else:
                 client.writer.write(encrypted_message)
                 print("is closing: {}".format(client.writer.is_closing()))
 
     def send_private_message(self, message, receiver, sender):
-        message = self.strip_private_message_handle(message)
+        message = strip_private_message_handle(message)
         message = ("@{}, ".format(self.last_message_sender) + message).encode('utf-8')
         encrypted_message = self.fernet.encrypt(message)
-        if self.sender_ignored(receiver, self.last_message_sender):
+        if sender_ignored(receiver, self.last_message_sender):
             pass
         else:
             receiver.writer.write(encrypted_message)
             sender.write(encrypted_message)
-
-    @staticmethod
-    def strip_private_message_handle(message):
-        return message[message.find(",")+1:]
-
-    @staticmethod
-    def sender_ignored(client, sender):
-        if sender in client.ignored_users:
-            return True
-        else:
-            return False
 
     async def add_new_connection(self, writer, message):
         username = message.split('||')[1]
@@ -159,6 +144,20 @@ class ChatProtocol(asyncio.Protocol):
         self._clients.add(client)
         return client
 
+
+async def is_command(message):
+    return message.startswith(COMMAND_FLAG)
+
+
+def strip_private_message_handle(message):
+    return message[message.find(",")+1:]
+
+
+def sender_ignored(client, sender):
+    if sender in client.ignored_users:
+        return True
+    else:
+        return False
 
 async def main():
     # Get dict of dict for previous users
@@ -176,5 +175,4 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
-
 

@@ -28,24 +28,28 @@ COMMAND_CODE = {
 class ClientProtocol(asyncio.Protocol):
     def __init__(self, thread_shared_data):
         super().__init__()
-        self.command_handler = CommandHandler()
-        self.reader = self.writer = None
-        self.ready_to_connect = False
         self.thread_shared_data = thread_shared_data
-        self.connection_info = {'ip': '', 'username': '', 'password': ''}
+        self.command_handler = CommandHandler()
         self.chat_history = ClientChatHistory()
+        self.reader = self.writer = None
+        self.connection_info = {'ip': '', 'username': '', 'password': ''}
         self.user_list = ""
         self.fernet = Fernet(FERNET_KEY)
         self.login_success = False
         self.invalid_credentials = False
+        self.ready_to_connect = False
 
     def run_listener_thread(self):
         t = threading.Thread(name='listener', target=self.try_to_connect)
         t.start()
 
     async def connect_to_server(self):
-        self.reader, self.writer = await asyncio.open_connection(
-            self.connection_info['ip'], PORT)
+        try:
+            self.reader, self.writer = await asyncio.open_connection(
+                self.connection_info['ip'], PORT)
+        except ConnectionRefusedError:
+            # TODO: add "Server down" popup
+            pass
         print("Connection established")
         self.ready_to_connect = False
 
@@ -70,14 +74,10 @@ class ClientProtocol(asyncio.Protocol):
                     break
 
     async def route_data(self, data):
-        if await self.is_command(data):
+        if await is_command(data):
             await self.execute_command(data)
         else:
             self.update_chat_history(data)
-
-    @staticmethod
-    async def is_command(data):
-        return data.startswith(COMMAND_FLAG)
 
     async def execute_command(self, data):
         result = await self.command_handler.process_command(data)
@@ -97,8 +97,7 @@ class ClientProtocol(asyncio.Protocol):
         self.ready_to_connect = False
         self.login_success = True
 
-    def update_chat_history(self, data):
-        message = data.decode()
+    def update_chat_history(self, message):
         self.chat_history.add_message(message)
 
     def start_connection(self, ip=None, username=None, password=None):
@@ -117,15 +116,11 @@ class ClientProtocol(asyncio.Protocol):
         asyncio.run(self.connect_to_server())
 
     def send_message(self, message):
-        if self.is_private_message(message):
+        if is_private_message(message):
             message = COMMAND_FLAG + COMMAND_CODE['private_message'] + message
         encrypted_message = self.fernet.encrypt(message.encode('utf-8'))
         print("write {}".format(encrypted_message))
         self.writer.write(encrypted_message)
-
-    @staticmethod
-    def strip_private_message_handle(message):
-        return message[message.find(",")+1:]
 
     def toggle_user_ignore(self, user):
         ignore_request = COMMAND_FLAG + COMMAND_CODE['ignore_request'] + user
@@ -133,20 +128,27 @@ class ClientProtocol(asyncio.Protocol):
         print('send ignore request')
         self.writer.write(encrypted_request)
 
-    @staticmethod
-    def is_private_message(message):
-        if message.startswith("@"):
-            return True
-        else:
-            return False
-
-    @staticmethod
-    def get_receiving_user(message):
-        return message[message.find("@")+1:message.find(",")]
-
     def send_closed_command(self):
         closed_connection_command = COMMAND_FLAG + COMMAND_CODE['closed_connection']
         encrypted_command = self.fernet.encrypt(closed_connection_command.encode('utf-8'))
         print("send close command")
         self.writer.write(encrypted_command)
 
+
+def strip_private_message_handle(message):
+    return message[message.find(",")+1:]
+
+
+def is_private_message(message):
+    if message.startswith("@"):
+        return True
+    else:
+        return False
+
+
+def get_receiving_user(message):
+    return message[message.find("@")+1:message.find(",")]
+
+
+async def is_command(data):
+    return data.startswith(COMMAND_FLAG)

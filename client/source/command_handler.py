@@ -18,7 +18,7 @@ class CommandHandler:
     async def process_command(self, data):
         result = None
 
-        command = data.decode('utf-8')[40:60]
+        command = data[40:60]
         if command == COMMAND_CODE['update_user_list']:
             result = await self.update_user_list(data)
         elif command == COMMAND_CODE['invalid_credentials']:
