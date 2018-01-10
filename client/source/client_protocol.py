@@ -42,7 +42,7 @@ class ClientProtocol(asyncio.Protocol):
         self.server_shutdown = False
 
     def run_listener_thread(self):
-        t = threading.Thread(name='listener', target=self.try_to_connect)
+        t = threading.Thread(name='listener', target=self.try_to_connect, daemon=True)
         t.start()
 
     async def connect_to_server(self):
@@ -137,10 +137,13 @@ class ClientProtocol(asyncio.Protocol):
         self.writer.write(encrypted_request)
 
     def send_closed_command(self):
-        closed_connection_command = COMMAND_FLAG + COMMAND_CODE['closed_connection']
-        encrypted_command = self.fernet.encrypt(closed_connection_command.encode('utf-8'))
-        print("send close command")
-        self.writer.write(encrypted_command)
+        if self.writer:
+            closed_connection_command = COMMAND_FLAG + COMMAND_CODE['closed_connection']
+            encrypted_command = self.fernet.encrypt(closed_connection_command.encode('utf-8'))
+            print("send close command")
+            self.writer.write(encrypted_command)
+        else:
+            return
 
 
 def strip_private_message_handle(message):

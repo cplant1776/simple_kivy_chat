@@ -39,5 +39,4 @@ if __name__ == "__main__":
 
 
 # TODO: Move atexit function to a global scale instead of class scale (does nothing at the moment)
-# TODO: gracefully close client when exited
 # TODO: Make chat screen pretty
