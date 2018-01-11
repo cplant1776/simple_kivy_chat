@@ -38,5 +38,5 @@ if __name__ == "__main__":
     ClientApp().run()
 
 
-# TODO: Move atexit function to a global scale instead of class scale (does nothing at the moment)
+# TODO: Move exit function to a global scale instead of class scale (does nothing at the moment)
 # TODO: Make chat screen pretty

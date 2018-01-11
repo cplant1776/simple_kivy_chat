@@ -1,6 +1,7 @@
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.clock import Clock
 from kivy.properties import StringProperty
+from kivy.uix.widget import Widget
 from client.source.ui.kv_widgets import ModalPopupButton, SubmissionPopup, FailedSubmissionPopup, ServerShutdownPopup
 
 
@@ -62,8 +63,8 @@ class StartScreen(Screen):
 
 
 class ChatRoomScreen(Screen):
-    chat_history = StringProperty('initial')
-    user_list = StringProperty('no users')
+    chat_history = StringProperty('')
+    user_list = StringProperty('')
 
     def on_enter(self):
         Clock.schedule_once(self.schedule_update_display_info)
@@ -76,6 +77,7 @@ class ChatRoomScreen(Screen):
         for user in self.user_list.split("\n"):
             button = ModalPopupButton(text=user)
             self.ids.user_list.add_widget(button)
+        self.ids.user_list.add_widget(Widget())
 
     def clear_user_list_display(self):
         self.ids.user_list.clear_widgets()

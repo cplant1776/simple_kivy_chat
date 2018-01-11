@@ -76,19 +76,21 @@
         text: "Connecting to server...."
 
 <FailedSubmissionPopup@ModalView>:
-    size_hint: 0.67, 0.2
+    size_hint: 0.75, 0.2
+    pos_hint: {'top': 0.7}
     auto_dismiss: False
 
     BoxLayout:
         orientation: 'vertical'
+        spacing: '10dp'
         Label:
             id: failed_submission_label
             text: "failedsubmissionpopup placeholder"
 
         Button:
-#        TODO: Center Dismiss button on popup
-            size_hint_x: 0.5
-            pos_pos_hint: 0.5, 0.5
+            pos_hint: {'center_x': 0.5}
+            size_hint_x: 0.3
+            size_hint_y: 0.25
             id: dismiss_failed_popup
             text: "Dismiss"
             on_press: root.dismiss()

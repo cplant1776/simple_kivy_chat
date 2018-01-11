@@ -121,7 +121,13 @@ class ClientProtocol(asyncio.Protocol):
             if self.ready_to_connect:
                 self.ready_to_connect = False
                 break
-        asyncio.run(self.connect_to_server())
+        # Server connection exists
+        try:
+            asyncio.run(self.connect_to_server())
+        # No server connection exists
+        except AttributeError:
+            self.ready_to_connect = False
+            self.run_listener_thread()
 
     def send_message(self, message):
         if is_private_message(message):
