@@ -1,14 +1,14 @@
 import asyncio
 
 COMMAND_CODE = {
-                "update_user_list"      : "SlBxeHfLVJUIYVsn7431",
-                "ignore_request"        : "ejhz7Qgf3f0grH8n8doi",
-                "private_message"       : "QhssaepygGEKGJpoYrlp",
-                "invalid_credentials"   : "nq8ypgDC95LlqCOvygw2",
-                "valid_credentials"     : "aEi6XmQb6rYotD2v3MvQ",
-                "opened_connection"     : "RYqB1X9EOSfMkQpwIC||",
-                "closed_connection"     : "uQgFWQ5icTeDVmoBgoXu",
-                "server_shutdown"       : "nST1UgKcdDOlrf3ndUYi"
+                "update_user_list": "SlBxeHfLVJUIYVsn7431",
+                "ignore_request": "ejhz7Qgf3f0grH8n8doi",
+                "private_message": "QhssaepygGEKGJpoYrlp",
+                "invalid_credentials": "nq8ypgDC95LlqCOvygw2",
+                "valid_credentials": "aEi6XmQb6rYotD2v3MvQ",
+                "opened_connection": "RYqB1X9EOSfMkQpwIC||",
+                "closed_connection": "uQgFWQ5icTeDVmoBgoXu",
+                "server_shutdown": "nST1UgKcdDOlrf3ndUYi"
                 }
 
 
