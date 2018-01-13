@@ -87,13 +87,6 @@ class DB:
               ) VALUES (?,?,?,?)''', data)
         self.con.commit()
 
-        self.c.execute('''SELECT * FROM user_credentials
-                           ORDER BY date_created DESC
-                           LIMIT 1
-                        ''')
-        new_user_entry = self.c.fetchone()
-        return new_user_entry
-
     @staticmethod
     def encrypt_password(pw, salt=os.urandom(16)):
         """Returns encrypted password and salt"""

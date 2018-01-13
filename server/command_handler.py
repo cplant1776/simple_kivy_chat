@@ -18,12 +18,25 @@ COMMAND_CODE = {
 DATABASE_NAME = path.join("database", "chap_app.db")
 db = DB(DATABASE_NAME)
 
+
 class CommandHandler:
+    """Handles backend actions when sending/receiving a command"""
     def __init__(self, user_database, fernet):
         self.user_database = user_database
         self.fernet = fernet
 
     async def process_command(self, message, writer, client_list, user_list):
+        """"Returns data based on command function run
+
+            Types:
+            private -- Message is private and should not be broadcast
+            close -- client wishes to disconnect
+            new -- new user
+            valid_credentials -- new client gave valid login credentials
+            ignore -- client wishes to ignore another client
+
+            Returned format: dict({'type': [TYPE], 'data': [DATA]})
+        """
         result = None
         command = message[40:60]
         if command == COMMAND_CODE['opened_connection']:
@@ -38,6 +51,10 @@ class CommandHandler:
         return result
 
     def toggle_ignore(self, message, writer, client_list):
+        """Toggle whether client is ignored by writer
+
+            Return type: ignore
+        """
         user_to_check = message[60:]
         for client in client_list:
             if client.writer == writer:
@@ -48,19 +65,31 @@ class CommandHandler:
         return {'type': 'ignore', 'data': {}}
 
     def private_message(self, message, client_list):
+        """Returns the client receiving a private message
+
+            Return type: private
+            Return data: receiving client
+        """
         receiving_user_name = self.get_receiving_user(message)
         receiving_client = self.find_receiving_client(receiving_user_name, client_list)
         return {'type': 'private', 'data': {'receiving_client': receiving_client}}
 
     def find_receiving_client(self, receiving_user, client_list):
+        """"Returns client whose name matches receiving user"""
         for client in client_list:
             if client.name == receiving_user:
                 return client
 
     def get_receiving_user(self, message):
+        """Returns name of receiving user"""
         return message[message.find("@") + 1:message.find(",")]
 
     def close_connection(self, client_list, writer, user_list):
+        """Closes writer and removes user from user_list
+
+            Return type: close
+            Return data: updated user list
+        """
         writer.close()
         removal_client = None
         for client in client_list:
@@ -72,18 +101,23 @@ class CommandHandler:
         return {'type': 'close', 'data': {'user_list': user_list}}
 
     async def new_connection(self, message, writer):
+        """Check for new users and then if their credentials are valid
+
+            Return type: new, valid_credentials, rejected
+        """
         if self.is_new_user(message):
-            new_user = await self.save_new_user_credentials(message)
+            await self.save_new_user_credentials(message)
             self.accept_connection(writer)
-            return {'type': 'new', 'data': {'new_user': new_user}}
+            return {'type': 'new', 'data': {}}
         elif self.is_valid_credentials(message):
             self.accept_connection(writer)
-            return {'type': 'valid_credentials'}
+            return {'type': 'valid_credentials', 'data': {}}
         else:
             await self.reject_connection(writer)
-            return {'type': 'rejected'}
+            return {'type': 'rejected', 'data': {}}
 
     def is_new_user(self, message):
+        """Returns True is username is not in user_database"""
         user_name = message.split("||")[1]
         for entry in self.user_database.values():
             if entry['user_name'] == user_name:
@@ -91,12 +125,14 @@ class CommandHandler:
         return True
 
     async def save_new_user_credentials(self, message):
+        """Store new user's credentials in database"""
         credentials = message.split('||')
         key, salt = db.encrypt_password(credentials[2])
-        new_user = db.add_new_user_credentials((credentials[1], credentials[1], key, salt))
-        return new_user
+        # TODO: If there's a problem, it probably started here
+        db.add_new_user_credentials((credentials[1], credentials[1], key, salt))
 
     def is_valid_credentials(self, message):
+        """Returns True if given password matches password in database"""
         data = message.split("||")
         user_name, password = data[1], data[2]
         valid_credentials = db.compare_credentials(user_name, password)
@@ -106,11 +142,13 @@ class CommandHandler:
             return False
 
     def accept_connection(self, writer):
+        """Write to new connection that it was ACCEPTED"""
         accepted_message = (COMMAND_FLAG + COMMAND_CODE['valid_credentials']).encode('utf-8')
         encrypted_message = self.fernet.encrypt(accepted_message)
         writer.write(encrypted_message)
 
     async def reject_connection(self, writer):
+        """Write to new connection that it was REJECTED"""
         rejected_message = (COMMAND_FLAG + COMMAND_CODE['invalid_credentials']).encode('utf-8')
         encrypted_message = self.fernet.encrypt(rejected_message)
         writer.write(encrypted_message)
