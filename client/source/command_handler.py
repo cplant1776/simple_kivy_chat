@@ -13,10 +13,21 @@ COMMAND_CODE = {
 
 
 class CommandHandler:
+    """Handles backend actions when sending/receiving a command"""
     def __init__(self):
         pass
 
     async def process_command(self, data):
+        """"Returns data based on command function run
+
+            Types:
+            update_user_list -- update user list on client (dis)connection
+            invalid_credentials -- submitted INVLAID login credentials
+            valid_credentials -- submitted VALID login credentials
+            server_shutdown -- server has been shut down
+
+            Returned format: dict({'type': [TYPE], 'data': [DATA]})
+        """
         result = None
 
         command = data[40:60]
@@ -32,19 +43,23 @@ class CommandHandler:
 
 
 async def update_user_list(data):
+    """Returns updated list of connected users"""
     user_list = data[60:]
     return {'type': 'update_user_list', 'data': {'user_list': user_list}}
 
 
 async def sent_invalid_credentials():
+    """Returns no data"""
     print("rejected")
     return {'type': 'invalid', 'data': {}}
 
 
 async def successfully_authenticated():
+    """Returns no data"""
     print("accepted")
     return {'type': 'valid', 'data': {}}
 
 
 async def server_shutdown():
+    """Returns no data"""
     return {'type': 'shutdown', 'data': {}}
