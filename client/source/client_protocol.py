@@ -27,6 +27,11 @@ COMMAND_CODE = {
 
 
 class ClientProtocol(asyncio.Protocol):
+    """Client behavior for all incoming/outgoing data
+
+        Keyword arguments:
+            None
+    """
     def __init__(self, thread_shared_data):
         super().__init__()
         self.thread_shared_data = thread_shared_data
@@ -42,10 +47,12 @@ class ClientProtocol(asyncio.Protocol):
         self.server_shutdown = False
 
     def run_listener_thread(self):
+        """Start thread to poll server for connection"""
         t = threading.Thread(name='listener', target=self.try_to_connect, daemon=True)
         t.start()
 
     async def connect_to_server(self):
+        """Attempts to open connection to server"""
         try:
             self.reader, self.writer = await asyncio.open_connection(
                 self.connection_info['ip'], PORT)
@@ -64,7 +71,10 @@ class ClientProtocol(asyncio.Protocol):
         await self.listen_for_response()
 
     async def listen_for_response(self):
-        # while self.authorized:
+        """Routine when client receives input from connection
+
+            The main loop that listens for activity on the server stream and reacts accordingly.
+        """
         while True:
             try:
                 data = await self.reader.read(MAX_SEND_SIZE)
@@ -80,12 +90,21 @@ class ClientProtocol(asyncio.Protocol):
                 break
 
     async def route_data(self, data):
+        """Determines if data was a command or a message"""
         if await is_command(data):
             await self.execute_command(data)
         else:
             self.update_chat_history(data)
 
     async def execute_command(self, data):
+        """"Respond to received command
+
+            Process command in CommandHandler then execute final steps here. Types:
+            update_user_list -- Update displayed connected users
+            invalid -- response when submitting INVALID credentials
+            valid -- response when submitting VALID credentials
+            shutdown -- server has shut down
+        """
         result = await self.command_handler.process_command(data)
         if result['type'] == 'update_user_list':
             self.user_list = result['data']['user_list']
@@ -97,24 +116,29 @@ class ClientProtocol(asyncio.Protocol):
             self.server_shutdown = True
 
     async def invalid_credentials_routine(self):
+        """Reset flags for next connection attempt"""
         self.ready_to_connect = False
         self.invalid_credentials = True
         self.run_listener_thread()
 
     async def valid_credentials_routine(self):
+        """Set flags for successful login attempt"""
         self.ready_to_connect = False
         self.login_success = True
 
     def update_chat_history(self, message):
+        """Updates displayed chat history for the session"""
         self.chat_history.add_message(message)
 
     def start_connection(self, ip=None, username=None, password=None):
+        """Set submission info for login attempt"""
         self.connection_info['ip'] = ip
         self.connection_info['username'] = username
         self.connection_info['password'] = password
         self.ready_to_connect = True
 
     def try_to_connect(self):
+        """Opens connection to server when ready_to_connect flag is True"""
         while True:
             sleep(1)
             print("TRY TO CONNECT")
@@ -130,6 +154,7 @@ class ClientProtocol(asyncio.Protocol):
             self.run_listener_thread()
 
     def send_message(self, message):
+        """Submit message to server"""
         if is_private_message(message):
             message = COMMAND_FLAG + COMMAND_CODE['private_message'] + message
         encrypted_message = self.fernet.encrypt(message.encode('utf-8'))
@@ -137,26 +162,31 @@ class ClientProtocol(asyncio.Protocol):
         self.writer.write(encrypted_message)
 
     def toggle_user_ignore(self, user):
+        """Ignores the selected user (will not see chat from them)"""
         ignore_request = COMMAND_FLAG + COMMAND_CODE['ignore_request'] + user
         encrypted_request = self.fernet.encrypt(ignore_request.encode('utf-8'))
         print('send ignore request')
         self.writer.write(encrypted_request)
 
     def send_closed_command(self):
+        """Tells server that the client has closed"""
         if self.writer:
             closed_connection_command = COMMAND_FLAG + COMMAND_CODE['closed_connection']
             encrypted_command = self.fernet.encrypt(closed_connection_command.encode('utf-8'))
             print("send close command")
             self.writer.write(encrypted_command)
         else:
+            # TODO: Remove this else clause
             return
 
 
 def strip_private_message_handle(message):
+    """Returns message with '@[NAME],' removed"""
     return message[message.find(",")+1:]
 
 
 def is_private_message(message):
+    """Returns True if message starts with '@'"""
     if message.startswith("@"):
         return True
     else:
@@ -164,8 +194,10 @@ def is_private_message(message):
 
 
 def get_receiving_user(message):
+    """Returns receiver of private message"""
     return message[message.find("@")+1:message.find(",")]
 
 
 async def is_command(data):
+    """Returns True if message starts with command flag"""
     return data.startswith(COMMAND_FLAG)

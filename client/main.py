@@ -11,6 +11,7 @@ KV_FILE = 'client.kv'
 Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
 
 def load_kv_file(kv):
+    """Loads master kv file in ./kv"""
     # Workaround because kivy had trouble with relative paths
     os.chdir("kv")
     Builder.load_file(kv)
@@ -20,11 +21,13 @@ def load_kv_file(kv):
 class ClientApp(App):
 
     def on_stop(self):
+        """Tell server the client closed unexpectedly"""
         print("I stopped!")
         self.client_protocol.send_closed_command()
         quit()
 
     def build(self):
+        """Start main loop"""
         thread_shared_data = queue.Queue()
         self.client_protocol = ClientProtocol(thread_shared_data)
         self.client_protocol.run_listener_thread()
