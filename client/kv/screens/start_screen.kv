@@ -1,16 +1,16 @@
 #===================================
-# LOGIN SCREEN
+# START SCREEN
 #===================================
 <StartScreen>:
     BoxLayout
-        on_enter: root.screen_tester_func()
-        id: start_layout
+        id: login_layout
         orientation: 'vertical'
         padding: ['10dp','50dp','10dp','50dp']
         spacing: '50dp'
 
         Label:
             text: '[PLACEHOLDER]'
+#            text: app.root.session.style
             font_size: 32
 
         BoxLayout:
@@ -18,13 +18,14 @@
             padding: 10
 
             Label:
-                text: 'Server IP Address:'
+                text: 'Server IP Address'
 
             TextInput:
                 id: server_ip
                 multiline: False
                 write_tab: False
                 size_hint: 0.5, 1
+                text: '127.0.0.1'
                 pos_hint: {'center_x': 0.5}
 
         BoxLayout:
@@ -32,20 +33,35 @@
             padding: 10
 
             Label:
-                text: 'Username:'
+                text: 'Username'
 
             TextInput:
                 id: username
                 multiline:False
                 write_tab: False
+                size_hint: 0.5, 1
+                text: 'josh'
+                pos_hint: {'center_x': 0.5}
+
+        BoxLayout:
+            orientation: 'vertical'
+            padding: 10
+
+            Label:
+                text: 'Password'
+
+            TextInput:
+                id: password
+                multiline:False
+                write_tab: False
                 password: True
                 size_hint: 0.5, 1
+                text: 'brown'
                 pos_hint: {'center_x': 0.5}
 
         Button:
             text: 'Submit'
             pos_hint: {'center_x': 0.5}
             size_hint: 0.4,0.5
-            on_release: pass
-            on_release: pass
-
+            on_release: app.root.client_protocol.start_connection(server_ip.text, username.text, password.text)
+            on_release: app.root.current = 'ChatRoomScreen'
