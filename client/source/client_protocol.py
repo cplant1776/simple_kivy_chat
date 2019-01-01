@@ -1,5 +1,6 @@
 import asyncio
 from client.source.chat_history import ClientChatHistory
+from cryptography.fernet import Fernet
 from time import sleep
 
 # ================
@@ -23,20 +24,24 @@ class ClientProtocol(asyncio.Protocol):
         self.connection_info = {'ip': '', 'username': '', 'password': ''}
         self.chat_history = ClientChatHistory()
         self.user_list = ""
+        self.fernet = Fernet(FERNET_KEY)
 
     async def connect_to_server(self):
         self.reader, self.writer = await asyncio.open_connection(
             self.connection_info['ip'], PORT)
+        print("WTF")
 
-        credentials = self.connection_info['username'] + '||' + self.connection_info['password'] + '||'
-        self.writer.write(credentials.encode('utf-8'))
+        credentials = (self.connection_info['username'] + '||' + self.connection_info['password'] + '||').encode('utf-8')
+        encrypted_credentials = self.fernet.encrypt(credentials)
+        self.writer.write(encrypted_credentials)
 
         await self.listen_for_response()
 
     async def listen_for_response(self):
         while True:
             data = await self.reader.read(MAX_SEND_SIZE)
-            route = await self.route_data(data)
+            decrypted_data = self.fernet.decrypt(data)
+            route = await self.route_data(decrypted_data)
 
     async def route_data(self, data):
         decoded_data = data.decode()
@@ -72,5 +77,6 @@ class ClientProtocol(asyncio.Protocol):
         asyncio.run(self.connect_to_server())
 
     def send_message(self, message):
-        print('send: {}'.format(message))
-        self.writer.write(message.encode('utf-8'))
+        encrypted_message = self.fernet.encrypt(message.encode('utf-8'))
+        print('send.')
+        self.writer.write(encrypted_message)

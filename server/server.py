@@ -46,7 +46,8 @@ class ChatProtocol(asyncio.Protocol):
 
     async def handle_input(self, reader, writer):
         while True:
-            data = await reader.read(MAX_SEND_SIZE)
+            encrypted_data = await reader.read(MAX_SEND_SIZE)
+            data = self.fernet.decrypt(encrypted_data)
             self.update_last_message_sender(writer)
             print("Received from {}".format(self.last_message_sender))
 
@@ -131,8 +132,9 @@ class ChatProtocol(asyncio.Protocol):
     def send_updated_user_list(self):
         user_list = "\n".join(self.user_list)
         for client in self._clients:
-            data = COMMAND_FLAG + COMMAND_CODE['update_user_list'] + user_list
-            client.writer.write(data.encode("utf-8"))
+            data = (COMMAND_FLAG + COMMAND_CODE['update_user_list'] + user_list).encode('utf-8')
+            encrypted_data = self.fernet.encrypt(data)
+            client.writer.write(encrypted_data)
 
     def save_message_to_history(self, data):
         message = data.decode()
@@ -140,9 +142,10 @@ class ChatProtocol(asyncio.Protocol):
         db.insert_into_chat_history(db_data)
 
     def broadcast_message(self, data):
-        message = "{}: ".format(self.last_message_sender) + data.decode()
+        message = ("{}: ".format(self.last_message_sender) + data.decode()).encode('utf-8')
+        encrypted_message = self.fernet.encrypt(message)
         for client in self._clients:
-            client.writer.write(message.encode('utf-8'))
+            client.writer.write(encrypted_message)
 
 
 async def main():
