@@ -21,11 +21,9 @@ class ClientApp(App):
     def build(self):
         thread_shared_data = queue.Queue()
         client_protocol = ClientProtocol(thread_shared_data)
+        client_protocol.run_listener_thread()
 
-        t = threading.Thread(name='listener', target=client_protocol.try_to_connect)
-        t.start()
-
-        print('move on')
+        print('Loading interface...')
         load_kv_file(KV_FILE)
         return screens.RootScreen(client_protocol=client_protocol)
 

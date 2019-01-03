@@ -2,6 +2,7 @@
 # START SCREEN
 #===================================
 <StartScreen>:
+#    on_enter: self.on_enter
     BoxLayout
         id: login_layout
         orientation: 'vertical'
@@ -63,5 +64,7 @@
             text: 'Submit'
             pos_hint: {'center_x': 0.5}
             size_hint: 0.4,0.5
-            on_release: app.root.client_protocol.start_connection(server_ip.text, username.text, password.text)
-            on_release: app.root.current = 'ChatRoomScreen'
+#            on_release: app.root.client_protocol.start_connection(server_ip.text, username.text, password.text)
+            on_release: root.attempt_to_connect(server_ip.text, username.text, password.text)
+            on_release: print("Establishing connection...")
+#            on_release: app.root.current = 'ChatRoomScreen'

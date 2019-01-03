@@ -44,11 +44,17 @@
 
 <ScrollableLabel@ScrollView>:
     text: 'SCROLLABLELABEL'
-    Label:
+#    Label:
+#        size_hint_y: None
+#        height: self.texture_size[1]
+#        text_size: self.width, None
+#        text: root.text
+    TextInput:
         size_hint_y: None
-        height: self.texture_size[1]
+#        height: self.texture_size[1]
         text_size: self.width, None
         text: root.text
+        readonly: True
 
 <ChatLabel@Label>:
     text: 'PLACEHOLDER'
@@ -77,10 +83,6 @@
 #    pos_hint_y: 0 if self.touch is None else self.touch.spos[1]
 
 <UserButton@Button>:
-    on_press: print(self.ids)
-#    PopMenu:
-#    on_press: self.ids.pop_menu.open()
-#    on_press: print(self.ids.pop_menu)
 
 
 

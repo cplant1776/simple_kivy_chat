@@ -5,8 +5,7 @@ from cryptography.fernet import Fernet
 
 
 
-# TO DO
-# In client chat, make the display text a TetInput in read-only mode. Use show_copy_paste property (google it) for a menu
+# TODO: Add "connecting...." popup to client screen, then failed to connect popup on timeout
 # Make it pretty
 # Refactor
 #     -break it down into classes. Potentials:
@@ -19,11 +18,13 @@ from cryptography.fernet import Fernet
 FERNET_KEY = b'c-NvlK-RKfE4m23tFSa8IAtma0IsDMuStjWU0WZuQOc='
 COMMAND_FLAG = "jfUpSzZxA5VKNEJPDa9y1AWRhyJjQrQPBjBvXC0p"
 COMMAND_CODE = {
-                "update_user_list": "SlBxeHfLVJUIYVsn7431",
-                "ignore_request"  : "ejhz7Qgf3f0grH8n8doi",
-                "private_message" : "QhssaepygGEKGJpoYrlp"
+                "update_user_list"    : "SlBxeHfLVJUIYVsn7431",
+                "ignore_request"      : "ejhz7Qgf3f0grH8n8doi",
+                "private_message"     : "QhssaepygGEKGJpoYrlp",
+                "invalid_credentials" : "nq8ypgDC95LlqCOvygw2",
+                "valid_credentials"   : "aEi6XmQb6rYotD2v3MvQ"
                 }
-
+# TODO: add valid/credentials message return when new connection tries to connect
 
 DATABASE_NAME = path.join("database", "chap_app.db")
 SERVER_IP = '127.0.0.1'
@@ -53,17 +54,23 @@ class ChatProtocol(asyncio.Protocol):
 
     async def handle_input(self, reader, writer):
         while True:
-            encrypted_data = await reader.read(MAX_SEND_SIZE)
-            data = self.fernet.decrypt(encrypted_data)
+            if not writer.is_closing():
+                print("writer: {}".format(writer))
+                encrypted_data = await reader.read(MAX_SEND_SIZE)
+                print("fml")
+                data = self.fernet.decrypt(encrypted_data)
 
-            self.update_last_message_sender(writer)
-            print("Received from {}".format(self.last_message_sender))
+                self.update_last_message_sender(writer)
+                print("Received from {}".format(self.last_message_sender))
 
-            route = await self.determine_sender_type(writer)
-            print("Routing: {}".format(route))
-            await self.route_data(data, route, reader, writer)
+                route = await self.determine_sender_type(writer)
+                print("Routing: {}".format(route))
+                await self.route_data(data, route, reader, writer)
 
-            print("Restarting Loop")
+                print("Restarting Loop")
+            else:
+                print("Connection closed. . .")
+                break
 
     def update_last_message_sender(self, writer):
         for client in self._clients:
@@ -80,7 +87,6 @@ class ChatProtocol(asyncio.Protocol):
                 if writer == client.writer:
                     return 'known_connection'
         return 'new_connection'
-
 
     async def route_data(self, data, route, reader, writer):
         if route == 'new_connection':
@@ -130,13 +136,23 @@ class ChatProtocol(asyncio.Protocol):
             await self.new_user_protocol(data)
             print("new user")
         if self.is_valid_credentials(data):
+            self.accept_connection(writer)
             current_client = await self.add_new_connection(reader, writer, data)
             await self.update_connected_user_list(current_client)
         else:
-            self.reject_connection(writer)
+            await self.reject_connection(writer)
 
-    def reject_connection(self, writer):
-        writer.write("Invalid credentials. Please try again.".encode())
+    def accept_connection(self, writer):
+        accepted_message = (COMMAND_FLAG + COMMAND_CODE['valid_credentials']).encode('utf-8')
+        encrypted_message = self.fernet.encrypt(accepted_message)
+        writer.write(encrypted_message)
+
+    async def reject_connection(self, writer):
+        rejected_message = (COMMAND_FLAG + COMMAND_CODE['invalid_credentials']).encode('utf-8')
+        encrypted_message = self.fernet.encrypt(rejected_message)
+        writer.write(encrypted_message)
+        writer.close()
+        await writer.wait_closed()
 
     def is_valid_credentials(self, data):
         data = data.decode().split("||")
@@ -231,3 +247,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+

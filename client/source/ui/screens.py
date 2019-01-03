@@ -23,7 +23,33 @@ class RootScreen(ScreenManager):
 
 
 class StartScreen(Screen):
-    pass
+    # def on_enter(self, *args):
+    #     self.authentication_event = Clock.schedule_interval(self.check_for_login_success, 1)
+
+    def attempt_to_connect(self, server_ip, username, password):
+        self.parent.client_protocol.start_connection(server_ip, username, password)
+        self.timeout = 0
+        self.wait_For_server_response_event = Clock.schedule_interval(self.wait_for_server_response, 1)
+
+    def wait_for_server_response(self, *args):
+        print(self.timeout)
+        if self.parent.client_protocol.login_success:
+            self.wait_For_server_response_event.cancel()
+            self.parent.current = 'ChatRoomScreen'
+        elif self.timeout == 5:
+            self.failed_to_connect()
+        else:
+            self.timeout += 1
+
+    def failed_to_connect(self):
+        print("FAILED TO CONNECT")
+        self.wait_For_server_response_event.cancel()
+        # self.parent.client_protocol.writer.close()
+
+    # def check_for_login_success(self, *args):
+    #     if self.parent.client_protocol.authenticated:
+    #         self.authentication_event.cancel()
+    #         self.parent.current = 'ChatRoomScreen'
 
 
 class ChatRoomScreen(Screen):
