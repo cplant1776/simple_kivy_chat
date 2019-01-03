@@ -6,23 +6,29 @@ from cryptography.fernet import Fernet
 
 
 # TO DO
-# Encrypt messages
-# Display user list on chat room page
-# Add ability to private message people
+# In client chat, make the display text a TetInput in read-only mode. Use show_copy_paste property (google it) for a menu
 # Make it pretty
+# Refactor
+#     -break it down into classes. Potentials:
+#           * routing
+#           * command protocols
 
 # ================
 # HIDDEN VARIABLES
 # ================
 FERNET_KEY = b'c-NvlK-RKfE4m23tFSa8IAtma0IsDMuStjWU0WZuQOc='
 COMMAND_FLAG = "jfUpSzZxA5VKNEJPDa9y1AWRhyJjQrQPBjBvXC0p"
-COMMAND_CODE = {"update_user_list": "SlBxeHfLVJUIYVsn7431"}
+COMMAND_CODE = {
+                "update_user_list": "SlBxeHfLVJUIYVsn7431",
+                "ignore_request"  : "ejhz7Qgf3f0grH8n8doi",
+                "private_message" : "QhssaepygGEKGJpoYrlp"
+                }
 
 
 DATABASE_NAME = path.join("database", "chap_app.db")
 SERVER_IP = '127.0.0.1'
 SERVER_PORT = 1776
-MAX_SEND_SIZE = 1000
+MAX_SEND_SIZE = 1000000
 
 db = DB(DATABASE_NAME)
 
@@ -33,6 +39,7 @@ class Client:
         self.writer = writer
         self.name = name
         self.id = id
+        self.ignored_users = []
 
 
 class ChatProtocol(asyncio.Protocol):
@@ -48,14 +55,15 @@ class ChatProtocol(asyncio.Protocol):
         while True:
             encrypted_data = await reader.read(MAX_SEND_SIZE)
             data = self.fernet.decrypt(encrypted_data)
+
             self.update_last_message_sender(writer)
             print("Received from {}".format(self.last_message_sender))
 
-            route = await self.determine_data_route(writer)
-
+            route = await self.determine_sender_type(writer)
             print("Routing: {}".format(route))
             await self.route_data(data, route, reader, writer)
-            print("fin")
+
+            print("Restarting Loop")
 
     def update_last_message_sender(self, writer):
         for client in self._clients:
@@ -64,21 +72,58 @@ class ChatProtocol(asyncio.Protocol):
                 return
         return "INITIAL"
 
-    async def determine_data_route(self, writer):
+    async def determine_sender_type(self, writer):
         if not self._clients:
             return 'new_connection'
         else:
             for client in self._clients:
                 if writer == client.writer:
-                    return 'broadcast'
+                    return 'known_connection'
         return 'new_connection'
+
 
     async def route_data(self, data, route, reader, writer):
         if route == 'new_connection':
             await self.new_connection_protocol(data, reader, writer)
-        elif route == 'broadcast':
-            self.save_message_to_history(data)
-            self.broadcast_message(data)
+        elif route == 'known_connection':
+            self.known_connection_protocol(data, writer)
+
+    def known_connection_protocol(self, data, writer):
+        message = data.decode('utf-8')
+        if message.startswith(COMMAND_FLAG):
+            self.execute_specified_command(message, writer)
+        else:
+            self.save_message_to_history(message)
+            self.broadcast_message(message)
+
+    def execute_specified_command(self, message, writer):
+        command = message[40:60]
+        if command == COMMAND_CODE['ignore_request']:
+            self.process_ignore_request(message, writer)
+        elif command == COMMAND_CODE['private_message']:
+            self.process_private_message_request(message[60:], writer)
+
+    def process_ignore_request(self, message, writer):
+        user_to_check = message[60:]
+        for client in self._clients:
+            if client.writer == writer:
+                if user_to_check in client.ignored_users:
+                    client.ignored_users.remove(user_to_check)
+                else:
+                    client.ignored_users.append(user_to_check)
+
+    def process_private_message_request(self, message, writer):
+        receiving_user_name = self.get_receiving_user(message)
+        receiving_client = self.find_receiving_client(receiving_user_name)
+        self.send_private_message(message, receiving_client, writer)
+
+    def get_receiving_user(self, message):
+        return message[message.find("@") + 1:message.find(",")]
+
+    def find_receiving_client(self, receiving_user):
+        for client in self._clients:
+            if client.name == receiving_user:
+                return client
 
     async def new_connection_protocol(self, data, reader, writer):
         if self.is_new_user(data):
@@ -131,21 +176,44 @@ class ChatProtocol(asyncio.Protocol):
 
     def send_updated_user_list(self):
         user_list = "\n".join(self.user_list)
+        print("send update")
         for client in self._clients:
             data = (COMMAND_FLAG + COMMAND_CODE['update_user_list'] + user_list).encode('utf-8')
             encrypted_data = self.fernet.encrypt(data)
             client.writer.write(encrypted_data)
 
-    def save_message_to_history(self, data):
-        message = data.decode()
+    def save_message_to_history(self, message):
         db_data = (self.user_database[self.last_message_sender]['id'], message)
         db.insert_into_chat_history(db_data)
 
-    def broadcast_message(self, data):
-        message = ("{}: ".format(self.last_message_sender) + data.decode()).encode('utf-8')
+    def broadcast_message(self, message):
+        message = ("{}: ".format(self.last_message_sender) + message).encode('utf-8')
         encrypted_message = self.fernet.encrypt(message)
         for client in self._clients:
-            client.writer.write(encrypted_message)
+            if self.sender_ignored(client, self.last_message_sender):
+                pass
+            else:
+                client.writer.write(encrypted_message)
+
+    def send_private_message(self, message, receiver, sender):
+        message = self.strip_private_message_handle(message)
+        message = ("@{}, ".format(self.last_message_sender) + message).encode('utf-8')
+        encrypted_message = self.fernet.encrypt(message)
+        if self.sender_ignored(receiver, self.last_message_sender):
+            pass
+        else:
+            receiver.writer.write(encrypted_message)
+            sender.write(encrypted_message)
+
+    def strip_private_message_handle(self, message):
+        return message[message.find(",")+1:]
+
+    def sender_ignored(self, client, sender):
+        if sender in client.ignored_users:
+            return True
+        else:
+            return False
+
 
 
 async def main():

@@ -5,12 +5,10 @@ import client.source.ui.screens as screens
 from client.source.client_protocol import ClientProtocol
 import threading
 import queue
-
-import tracemalloc
-tracemalloc.start()
+from kivy.config import Config
 
 KV_FILE = 'client.kv'
-
+Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
 
 def load_kv_file(kv):
     # Workaround because kivy had trouble with relative paths

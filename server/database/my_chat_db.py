@@ -96,19 +96,6 @@ class DB:
         for result in query:
             print(result)
 
-    # def encrypt_password(self, pw):
-    #     pw = pw.encode('utf-8')
-    #     salt = self.generate_salt()
-    #     kdf = PBKDF2HMAC(
-    #         algorithm=hashes.SHA256(),
-    #         length=32,
-    #         salt=salt,
-    #         iterations=100000,
-    #         backend=default_backend()
-    #     )
-    #     key = kdf.derive(pw)
-    #     return key, salt
-
     def encrypt_password(self, pw, salt=os.urandom(16)):
         pw = pw.encode('utf-8')
         kdf = PBKDF2HMAC(
@@ -155,35 +142,14 @@ class DB:
             print("already finished")
             return True
         else:
-            print("fudge")
+            print("Valid key")
             return True
-
-
-    # def verified_successfully(self, correct_credentials, password):
-    #     kdf = PBKDF2HMAC(
-    #         algorithm=hashes.SHA256(),
-    #         length=32,
-    #         salt=correct_credentials['salt'],
-    #         iterations=100000,
-    #         backend=default_backend()
-    #     )
-    #     try:
-    #         kdf.verify(password, correct_credentials['key'])
-    #     except InvalidKey:
-    #         print("invalid key")
-    #         return False
-    #     except AlreadyFinalized:
-    #         print("already finished")
-    #         return True
-    #     else:
-    #         print("fudge")
-    #         return True
 
 
 if __name__ == '__main__':
     db = DB('chap_app.db')
-    db.clear_tables()
-    db.create_tables()
+    # db.clear_tables()
+    # db.create_tables()
     db.show_chat_history()
     db.show_user_credentials()
 

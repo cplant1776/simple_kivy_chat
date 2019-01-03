@@ -8,9 +8,10 @@
     on_enter: self.on_enter
     BoxLayout:
         orientation: 'vertical'
-        text: 'I am a placeholder'
+        text: 'CHATROOMSCREEN PLACEHOLDER'
 
         BoxLayout:
+            id: chat_layout
 #            height: 90
 #            orientation: 'horizontal'
 #            padding: 0
@@ -18,6 +19,8 @@
 
             TextInput:
                 id: message
+                use_bubble: True
+                write_tab: False
                 on_text_validate: app.root.client_protocol.send_message(message.text)
 
             Button:
@@ -29,13 +32,18 @@
                 id: chat_logs
                 text: 'fiddle stix' if root.parent is None else root.chat_history
 
-            ScrollableLabel:
-                id: user_list
-                text: 'fiddle stix' if root.parent is None else root.parent.client_protocol.chat_history.history_string
+            ScrollView:
+                id: user_list_container
+
+                BoxLayout:
+                    orientation: 'vertical'
+                    id: user_list
+
+
 
 
 <ScrollableLabel@ScrollView>:
-    text: 'I am a placeholder'
+    text: 'SCROLLABLELABEL'
     Label:
         size_hint_y: None
         height: self.texture_size[1]
@@ -44,3 +52,35 @@
 
 <ChatLabel@Label>:
     text: 'PLACEHOLDER'
+
+<ContextMenu@BoxLayout>:
+    id: context_menu
+    orientation: 'vertical'
+
+    Button:
+        id: private_message
+        text: "Send private message"
+        on_press: app.root.ids.chat_room_screen.next_message_private(context_menu.parent.name)
+        on_press: self.parent.parent.dismiss()
+
+    Button:
+        id: ignore
+        text: "Toggle ignore"
+        on_press: app.root.client_protocol.toggle_user_ignore(context_menu.parent.name)
+        on_press: self.parent.parent.dismiss()
+
+<PopModal@ModalView>:
+    size_hint: None, None
+    height: '50dp'
+    width: '200dp'
+#    pos_hint_x: 0 if self.touch is None else self.touch.spos[0]
+#    pos_hint_y: 0 if self.touch is None else self.touch.spos[1]
+
+<UserButton@Button>:
+    on_press: print(self.ids)
+#    PopMenu:
+#    on_press: self.ids.pop_menu.open()
+#    on_press: print(self.ids.pop_menu)
+
+
+

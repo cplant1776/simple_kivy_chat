@@ -1,6 +1,8 @@
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.clock import Clock
+from kivy.uix.button import Button
 from kivy.properties import StringProperty
+from client.source.ui.kv_widgets import UserButton
 
 
 # ====================================
@@ -29,11 +31,31 @@ class ChatRoomScreen(Screen):
     user_list = StringProperty('no users')
 
     def on_enter(self):
-        Clock.schedule_once(self.schedule_check_for_chat_updates)
+        Clock.schedule_once(self.schedule_update_display_info)
 
-    def schedule_check_for_chat_updates(self, *args):
-        Clock.schedule_interval(self.update_chat_history, 0.5)
+    def schedule_update_display_info(self, *args):
+        Clock.schedule_interval(self.update_display_info, 1)
 
-    def update_chat_history(self, *args):
-        self.chat_history = self.parent.client_protocol.chat_history.history_string
-        print("check")
+    def update_user_list_buttons(self):
+        self.clear_user_list_display()
+        for user in self.user_list.split("\n"):
+            button = UserButton(text=user)
+            self.ids.user_list.add_widget(button)
+
+    def clear_user_list_display(self):
+        self.ids.user_list.clear_widgets()
+
+    def update_display_info(self, *args):
+        if self.chat_history != self.parent.client_protocol.chat_history.history_string:
+            self.chat_history = self.parent.client_protocol.chat_history.history_string
+
+        if self.user_list != self.parent.client_protocol.user_list:
+            self.user_list = self.parent.client_protocol.user_list
+            self.update_user_list_buttons()
+
+    def next_message_private(self, user):
+        current_text = self.ids.message.text
+        self.ids.message.text = ''
+        current_text = "@{}, ".format(user) + current_text
+        self.ids.message.text = current_text
+
