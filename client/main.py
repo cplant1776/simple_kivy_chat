@@ -18,14 +18,19 @@ def load_kv_file(kv):
 
 
 class ClientApp(App):
+
+    def on_stop(self):
+        print("I stopped!")
+        self.client_protocol.send_closed_command()
+
     def build(self):
         thread_shared_data = queue.Queue()
-        client_protocol = ClientProtocol(thread_shared_data)
-        client_protocol.run_listener_thread()
+        self.client_protocol = ClientProtocol(thread_shared_data)
+        self.client_protocol.run_listener_thread()
 
         print('Loading interface...')
         load_kv_file(KV_FILE)
-        return screens.RootScreen(client_protocol=client_protocol)
+        return screens.RootScreen(client_protocol=self.client_protocol)
 
 
 if __name__ == "__main__":

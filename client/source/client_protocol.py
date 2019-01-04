@@ -14,11 +14,12 @@ MAX_SEND_SIZE = 1000000
 
 COMMAND_FLAG = "jfUpSzZxA5VKNEJPDa9y1AWRhyJjQrQPBjBvXC0p"
 COMMAND_CODE = {
-                "update_user_list": "SlBxeHfLVJUIYVsn7431",
-                "ignore_request"  : "ejhz7Qgf3f0grH8n8doi",
-                "private_message" : "QhssaepygGEKGJpoYrlp",
-                "invalid_credentials" : "nq8ypgDC95LlqCOvygw2",
-                "valid_credentials"   : "aEi6XmQb6rYotD2v3MvQ"
+                "update_user_list"      : "SlBxeHfLVJUIYVsn7431",
+                "ignore_request"        : "ejhz7Qgf3f0grH8n8doi",
+                "private_message"       : "QhssaepygGEKGJpoYrlp",
+                "invalid_credentials"   : "nq8ypgDC95LlqCOvygw2",
+                "valid_credentials"     : "aEi6XmQb6rYotD2v3MvQ",
+                "closed_connection"     : "uQgFWQ5icTeDVmoBgoXu"
                 }
 
 
@@ -33,6 +34,7 @@ class ClientProtocol(asyncio.Protocol):
         self.user_list = ""
         self.fernet = Fernet(FERNET_KEY)
         self.login_success = False
+        self.invalid_credentials = False
 
     def run_listener_thread(self):
         t = threading.Thread(name='listener', target=self.try_to_connect)
@@ -86,6 +88,7 @@ class ClientProtocol(asyncio.Protocol):
     async def sent_invalid_credentials(self):
         print("rejected")
         self.ready_to_connect = False
+        self.invalid_credentials = True
         self.run_listener_thread()
 
     def successfully_authenticated(self):
@@ -135,4 +138,10 @@ class ClientProtocol(asyncio.Protocol):
 
     def get_receiving_user(self, message):
         return message[message.find("@")+1:message.find(",")]
+
+    def send_closed_command(self):
+        closed_connection_command = COMMAND_FLAG + COMMAND_CODE['closed_connection']
+        encrypted_command = self.fernet.encrypt(closed_connection_command.encode('utf-8'))
+        print("send close command")
+        self.writer.write(encrypted_command)
 

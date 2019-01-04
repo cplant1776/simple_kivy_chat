@@ -2,7 +2,7 @@ from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.clock import Clock
 from kivy.uix.button import Button
 from kivy.properties import StringProperty
-from client.source.ui.kv_widgets import UserButton
+from client.source.ui.kv_widgets import ModalPopupButton, SubmissionPopup, FailedSubmissionPopup
 
 
 # ====================================
@@ -23,33 +23,43 @@ class RootScreen(ScreenManager):
 
 
 class StartScreen(Screen):
-    # def on_enter(self, *args):
-    #     self.authentication_event = Clock.schedule_interval(self.check_for_login_success, 1)
 
     def attempt_to_connect(self, server_ip, username, password):
         self.parent.client_protocol.start_connection(server_ip, username, password)
+        self.open_connecting_popup()
         self.timeout = 0
         self.wait_For_server_response_event = Clock.schedule_interval(self.wait_for_server_response, 1)
 
     def wait_for_server_response(self, *args):
         print(self.timeout)
+        # Login success
         if self.parent.client_protocol.login_success:
+            self.popup.dismiss()
             self.wait_For_server_response_event.cancel()
             self.parent.current = 'ChatRoomScreen'
+        # Timeout
         elif self.timeout == 5:
-            self.failed_to_connect()
+            self.failed_to_connect(message='Failed to connect to server. Please try again or check your network connection.')
+        # Invalid credentials
+        elif self.parent.client_protocol.invalid_credentials:
+            self.parent.client_protocol.invalid_credentials = False
+            self.failed_to_connect(message='Invalid username/password combination. Please try again.')
         else:
             self.timeout += 1
 
-    def failed_to_connect(self):
+    def failed_to_connect(self, message):
         print("FAILED TO CONNECT")
+        self.popup.dismiss()
+        self.open_failed_popup(message=message)
         self.wait_For_server_response_event.cancel()
-        # self.parent.client_protocol.writer.close()
 
-    # def check_for_login_success(self, *args):
-    #     if self.parent.client_protocol.authenticated:
-    #         self.authentication_event.cancel()
-    #         self.parent.current = 'ChatRoomScreen'
+    def open_connecting_popup(self):
+        self.popup = SubmissionPopup()
+        self.popup.open()
+
+    def open_failed_popup(self, message):
+        self.popup = FailedSubmissionPopup(message=message)
+        self.popup.open()
 
 
 class ChatRoomScreen(Screen):
@@ -65,7 +75,7 @@ class ChatRoomScreen(Screen):
     def update_user_list_buttons(self):
         self.clear_user_list_display()
         for user in self.user_list.split("\n"):
-            button = UserButton(text=user)
+            button = ModalPopupButton(text=user)
             self.ids.user_list.add_widget(button)
 
     def clear_user_list_display(self):

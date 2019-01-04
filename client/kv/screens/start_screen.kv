@@ -64,7 +64,31 @@
             text: 'Submit'
             pos_hint: {'center_x': 0.5}
             size_hint: 0.4,0.5
-#            on_release: app.root.client_protocol.start_connection(server_ip.text, username.text, password.text)
             on_release: root.attempt_to_connect(server_ip.text, username.text, password.text)
-            on_release: print("Establishing connection...")
-#            on_release: app.root.current = 'ChatRoomScreen'
+
+<SubmissionPopup@ModalView>:
+    size_hint: None, None
+    height: '50dp'
+    width: '200dp'
+    auto_dismiss: False
+
+    Label:
+        text: "Connecting to server...."
+
+<FailedSubmissionPopup@ModalView>:
+    size_hint: 0.67, 0.2
+    auto_dismiss: False
+
+    BoxLayout:
+        orientation: 'vertical'
+        Label:
+            id: failed_submission_label
+            text: "failedsubmissionpopup placeholder"
+
+        Button:
+#        TODO: Center Dismiss button on popup
+            size_hint_x: 0.5
+            pos_pos_hint: 0.5, 0.5
+            id: dismiss_failed_popup
+            text: "Dismiss"
+            on_press: root.dismiss()

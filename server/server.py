@@ -5,9 +5,8 @@ from cryptography.fernet import Fernet
 
 
 
-# TODO: Add "connecting...." popup to client screen, then failed to connect popup on timeout
-# Make it pretty
-# Refactor
+
+# TODO: Refactor
 #     -break it down into classes. Potentials:
 #           * routing
 #           * command protocols
@@ -18,13 +17,13 @@ from cryptography.fernet import Fernet
 FERNET_KEY = b'c-NvlK-RKfE4m23tFSa8IAtma0IsDMuStjWU0WZuQOc='
 COMMAND_FLAG = "jfUpSzZxA5VKNEJPDa9y1AWRhyJjQrQPBjBvXC0p"
 COMMAND_CODE = {
-                "update_user_list"    : "SlBxeHfLVJUIYVsn7431",
-                "ignore_request"      : "ejhz7Qgf3f0grH8n8doi",
-                "private_message"     : "QhssaepygGEKGJpoYrlp",
-                "invalid_credentials" : "nq8ypgDC95LlqCOvygw2",
-                "valid_credentials"   : "aEi6XmQb6rYotD2v3MvQ"
+                "update_user_list"      : "SlBxeHfLVJUIYVsn7431",
+                "ignore_request"        : "ejhz7Qgf3f0grH8n8doi",
+                "private_message"       : "QhssaepygGEKGJpoYrlp",
+                "invalid_credentials"   : "nq8ypgDC95LlqCOvygw2",
+                "valid_credentials"     : "aEi6XmQb6rYotD2v3MvQ",
+                "closed_connection"     : "uQgFWQ5icTeDVmoBgoXu"
                 }
-# TODO: add valid/credentials message return when new connection tries to connect
 
 DATABASE_NAME = path.join("database", "chap_app.db")
 SERVER_IP = '127.0.0.1'
@@ -56,10 +55,14 @@ class ChatProtocol(asyncio.Protocol):
         while True:
             if not writer.is_closing():
                 print("writer: {}".format(writer))
-                encrypted_data = await reader.read(MAX_SEND_SIZE)
-                print("fml")
-                data = self.fernet.decrypt(encrypted_data)
+                try:
+                    encrypted_data = await reader.read(MAX_SEND_SIZE)
+                except ConnectionResetError:
+                    print("Improper client shutdown!")
+                    self.process_close_connection_command(writer)
+                    break
 
+                data = self.fernet.decrypt(encrypted_data)
                 self.update_last_message_sender(writer)
                 print("Received from {}".format(self.last_message_sender))
 
@@ -108,6 +111,8 @@ class ChatProtocol(asyncio.Protocol):
             self.process_ignore_request(message, writer)
         elif command == COMMAND_CODE['private_message']:
             self.process_private_message_request(message[60:], writer)
+        elif command == COMMAND_CODE['closed_connection']:
+            self.process_close_connection_command(writer)
 
     def process_ignore_request(self, message, writer):
         user_to_check = message[60:]
@@ -130,6 +135,18 @@ class ChatProtocol(asyncio.Protocol):
         for client in self._clients:
             if client.name == receiving_user:
                 return client
+
+    def process_close_connection_command(self, writer):
+        writer.close()
+        removal_client = None
+        for client in self._clients:
+            if client.writer == writer:
+                removal_client = client
+        # update client list
+        # self._clients = (client for client in self._clients if not client.writer == writer)
+        self.user_list = [user for user in self.user_list if not user == removal_client.name]
+        self._clients.remove(removal_client)
+        self.send_updated_user_list()
 
     async def new_connection_protocol(self, data, reader, writer):
         if self.is_new_user(data):
@@ -210,6 +227,7 @@ class ChatProtocol(asyncio.Protocol):
                 pass
             else:
                 client.writer.write(encrypted_message)
+                print("is closing: {}".format(client.writer.is_closing()))
 
     def send_private_message(self, message, receiver, sender):
         message = self.strip_private_message_handle(message)

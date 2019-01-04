@@ -4,7 +4,7 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.properties import ObjectProperty, StringProperty
 
 
-class UserButton(Button):
+class ModalPopupButton(Button):
     def __init__(self, **kwargs):
         super(Button, self).__init__(**kwargs)
         self.on_touch_down = self.mouse_click
@@ -23,7 +23,6 @@ class PopMenu(object):
         context_menu = ContextMenu()
         self.popup = PopModal(touch, name)
         self.popup.add_widget(context_menu)
-        # self.add_widget(ContextMenu)
 
     def open(self):
         self.popup.open()
@@ -41,6 +40,21 @@ class PopModal(ModalView):
         super(ModalView, self).__init__(**kwargs)
         self.touch = touch
         self.name = name
+
+
+class SubmissionPopup(ModalView):
+    def __init__(self, **kwargs):
+        super(ModalView, self).__init__(**kwargs)
+
+
+class FailedSubmissionPopup(ModalView):
+    def __init__(self, message, **kwargs):
+        super(ModalView, self).__init__(**kwargs)
+        self.ids.failed_submission_label.text = message
+
+
+class SubmissionButton(Button):
+    pass
 
 
 
