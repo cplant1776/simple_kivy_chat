@@ -19,6 +19,7 @@ COMMAND_CODE = {
                 "private_message"       : "QhssaepygGEKGJpoYrlp",
                 "invalid_credentials"   : "nq8ypgDC95LlqCOvygw2",
                 "valid_credentials"     : "aEi6XmQb6rYotD2v3MvQ",
+                "opened_connection"     : "RYqB1X9EOSfMkQpwIC||",
                 "closed_connection"     : "uQgFWQ5icTeDVmoBgoXu"
                 }
 
@@ -46,10 +47,11 @@ class ClientProtocol(asyncio.Protocol):
         print("Connection established")
         self.ready_to_connect = False
 
-        credentials = (self.connection_info['username'] + '||' + self.connection_info['password'] + '||').encode('utf-8')
-        encrypted_credentials = self.fernet.encrypt(credentials)
-        print("connect_to_server".format(encrypted_credentials))
-        self.writer.write(encrypted_credentials)
+        credentials = self.connection_info['username'] + '||' + self.connection_info['password'] + '||'
+        request = COMMAND_FLAG + COMMAND_CODE['opened_connection'] + credentials
+        encrypted_request = self.fernet.encrypt(request.encode('utf-8'))
+        print("connect_to_server")
+        self.writer.write(encrypted_request)
 
         await self.listen_for_response()
 

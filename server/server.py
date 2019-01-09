@@ -1,6 +1,7 @@
 import asyncio
 from os import path
 from database.my_chat_db import DB
+from command_handler import CommandHandler
 from cryptography.fernet import Fernet
 
 
@@ -22,6 +23,7 @@ COMMAND_CODE = {
                 "private_message"       : "QhssaepygGEKGJpoYrlp",
                 "invalid_credentials"   : "nq8ypgDC95LlqCOvygw2",
                 "valid_credentials"     : "aEi6XmQb6rYotD2v3MvQ",
+                "opened_connection"     : "RYqB1X9EOSfMkQpwIC||",
                 "closed_connection"     : "uQgFWQ5icTeDVmoBgoXu"
                 }
 
@@ -34,7 +36,7 @@ db = DB(DATABASE_NAME)
 
 
 class Client:
-    def __init__(self, reader, writer, name=None, id=0):
+    def __init__(self, writer, name=None, reader=None, id=0):
         self.reader = reader
         self.writer = writer
         self.name = name
@@ -45,163 +47,66 @@ class Client:
 class ChatProtocol(asyncio.Protocol):
     def __init__(self, user_database):
         self.user_database = user_database
-        self.address = None
         self._clients = set()
         self.last_message_sender = ''
         self.user_list = []
         self.fernet = Fernet(FERNET_KEY)
+        self.command_handler = CommandHandler(user_database, self.fernet)
 
     async def handle_input(self, reader, writer):
         while True:
+            # Wait for data. Close connection if improperly closed
             if not writer.is_closing():
-                print("writer: {}".format(writer))
                 try:
                     encrypted_data = await reader.read(MAX_SEND_SIZE)
                 except ConnectionResetError:
                     print("Improper client shutdown!")
-                    self.process_close_connection_command(writer)
+                    self.user_list = self.command_handler.close_connection(self._clients, writer)
                     break
 
+                # Decrypt data and find who sent it
                 data = self.fernet.decrypt(encrypted_data)
+                message = data.decode('utf-8')
                 self.update_last_message_sender(writer)
                 print("Received from {}".format(self.last_message_sender))
 
-                route = await self.determine_sender_type(writer)
-                print("Routing: {}".format(route))
-                await self.route_data(data, route, reader, writer)
+                # Determine if it's a new connection
+                if await self.is_command(message):
+                    await self.execute_command(message, writer)
+                else:
+                    self.save_message_to_history(message)
+                    self.broadcast_message(message)
 
                 print("Restarting Loop")
             else:
                 print("Connection closed. . .")
                 break
 
+    async def is_command(self, message):
+        if message.startswith(COMMAND_FLAG):
+            return True
+        else:
+            return False
+
+    async def execute_command(self, message, writer):
+        result = await self.command_handler.process_command(message, writer, self._clients, self.user_list)
+        print(result)
+        if result['type'] == 'private':
+            self.send_private_message(message, result['data']['receiving_client'], writer)
+        elif result['type'] == 'close':
+            self.user_list = result['data']['user_list']
+        elif result['type'] in ['new', 'valid_credentials']:
+            current_client = await self.add_new_connection(writer, message)
+            await self.update_connected_user_list(current_client)
+        elif result['type'] in ['ignore']:
+            pass
+
     def update_last_message_sender(self, writer):
         for client in self._clients:
             if client.writer == writer:
                 self.last_message_sender = client.name
                 return
-        return "INITIAL"
-
-    async def determine_sender_type(self, writer):
-        if not self._clients:
-            return 'new_connection'
-        else:
-            for client in self._clients:
-                if writer == client.writer:
-                    return 'known_connection'
-        return 'new_connection'
-
-    async def route_data(self, data, route, reader, writer):
-        if route == 'new_connection':
-            await self.new_connection_protocol(data, reader, writer)
-        elif route == 'known_connection':
-            self.known_connection_protocol(data, writer)
-
-    def known_connection_protocol(self, data, writer):
-        message = data.decode('utf-8')
-        if message.startswith(COMMAND_FLAG):
-            self.execute_specified_command(message, writer)
-        else:
-            self.save_message_to_history(message)
-            self.broadcast_message(message)
-
-    def execute_specified_command(self, message, writer):
-        command = message[40:60]
-        if command == COMMAND_CODE['ignore_request']:
-            self.process_ignore_request(message, writer)
-        elif command == COMMAND_CODE['private_message']:
-            self.process_private_message_request(message[60:], writer)
-        elif command == COMMAND_CODE['closed_connection']:
-            self.process_close_connection_command(writer)
-
-    def process_ignore_request(self, message, writer):
-        user_to_check = message[60:]
-        for client in self._clients:
-            if client.writer == writer:
-                if user_to_check in client.ignored_users:
-                    client.ignored_users.remove(user_to_check)
-                else:
-                    client.ignored_users.append(user_to_check)
-
-    def process_private_message_request(self, message, writer):
-        receiving_user_name = self.get_receiving_user(message)
-        receiving_client = self.find_receiving_client(receiving_user_name)
-        self.send_private_message(message, receiving_client, writer)
-
-    def get_receiving_user(self, message):
-        return message[message.find("@") + 1:message.find(",")]
-
-    def find_receiving_client(self, receiving_user):
-        for client in self._clients:
-            if client.name == receiving_user:
-                return client
-
-    def process_close_connection_command(self, writer):
-        writer.close()
-        removal_client = None
-        for client in self._clients:
-            if client.writer == writer:
-                removal_client = client
-        # update client list
-        # self._clients = (client for client in self._clients if not client.writer == writer)
-        self.user_list = [user for user in self.user_list if not user == removal_client.name]
-        self._clients.remove(removal_client)
-        self.send_updated_user_list()
-
-    async def new_connection_protocol(self, data, reader, writer):
-        if self.is_new_user(data):
-            await self.new_user_protocol(data)
-            print("new user")
-        if self.is_valid_credentials(data):
-            self.accept_connection(writer)
-            current_client = await self.add_new_connection(reader, writer, data)
-            await self.update_connected_user_list(current_client)
-        else:
-            await self.reject_connection(writer)
-
-    def accept_connection(self, writer):
-        accepted_message = (COMMAND_FLAG + COMMAND_CODE['valid_credentials']).encode('utf-8')
-        encrypted_message = self.fernet.encrypt(accepted_message)
-        writer.write(encrypted_message)
-
-    async def reject_connection(self, writer):
-        rejected_message = (COMMAND_FLAG + COMMAND_CODE['invalid_credentials']).encode('utf-8')
-        encrypted_message = self.fernet.encrypt(rejected_message)
-        writer.write(encrypted_message)
-        writer.close()
-        await writer.wait_closed()
-
-    def is_valid_credentials(self, data):
-        data = data.decode().split("||")
-        user_name, password = data[0], data[1]
-        valid_credentials = db.compare_credentials(user_name, password)
-        if valid_credentials:
-            return True
-        else:
-            return False
-
-    def is_new_user(self, data):
-        user_name = data.decode().split("||")[0]
-        for entry in self.user_database.values():
-            if entry['user_name'] == user_name:
-                return False
-        return True
-
-    async def new_user_protocol(self, data):
-        self.save_new_user_credentials(data)
-
-    def save_new_user_credentials(self, data):
-        credentials = data.decode().split('||')
-        key, salt = db.encrypt_password(credentials[1])
-        new_user = db.add_new_user_credentials((credentials[0], credentials[0], key, salt))
-        self.user_database[new_user['user_name']] = new_user
-        print("stored new user info")
-
-    async def add_new_connection(self, reader, writer, data):
-        username = data.decode().split('||')[0]
-        client = Client(reader, writer, name=username)
-        self._clients.add(client)
-        return client
+        return ""
 
     async def update_connected_user_list(self, current_client):
         self.user_list.append(current_client.name)
@@ -247,6 +152,12 @@ class ChatProtocol(asyncio.Protocol):
             return True
         else:
             return False
+
+    async def add_new_connection(self, writer, message):
+        username = message.split('||')[1]
+        client = Client(writer, name=username)
+        self._clients.add(client)
+        return client
 
 
 
