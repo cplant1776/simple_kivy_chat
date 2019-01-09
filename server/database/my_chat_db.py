@@ -25,6 +25,9 @@ class DB:
         self.con.row_factory = dict_factory
         self.c = self.con.cursor()
 
+    # =====================
+    # Database management
+    # =====================
     def create_chat_history_table(self):
         # # Create table if doesnt exist
         self.c.execute('''CREATE TABLE IF NOT EXISTS chat_history (
@@ -46,36 +49,6 @@ class DB:
                     )''')
         self.con.commit()
 
-    def add_new_user_credentials(self, data):
-        self.c.execute('''INSERT INTO user_credentials(
-              user_name,
-              display_name,
-              key,
-              salt
-              ) VALUES (?,?,?,?)''', data)
-        self.con.commit()
-
-        self.c.execute('''SELECT * FROM user_credentials
-                           ORDER BY date_created DESC
-                           LIMIT 1
-                        ''')
-        new_user_entry = self.c.fetchone()
-        return new_user_entry
-
-    def insert_into_chat_history(self, data):
-        self.c.execute('''INSERT INTO chat_history(
-              id,
-              message
-              ) VALUES (?,?)''', data)
-        self.con.commit()
-
-    def get_known_users(self):
-        self.c.execute("SELECT * FROM user_credentials")
-        query = self.c.fetchall()
-        # Get dictionary of entries using user_name as index
-        users = {u["user_name"]: u for u in query}
-        return users
-
     def create_tables(self):
         self.create_chat_history_table()
         self.create_user_credentials_table()
@@ -96,6 +69,26 @@ class DB:
         for result in query:
             print(result)
 
+    # ===========================
+    # User/Chat history
+    # ===========================
+    def add_new_user_credentials(self, data):
+        self.c.execute('''INSERT INTO user_credentials(
+              user_name,
+              display_name,
+              key,
+              salt
+              ) VALUES (?,?,?,?)''', data)
+        self.con.commit()
+
+        self.c.execute('''SELECT * FROM user_credentials
+                           ORDER BY date_created DESC
+                           LIMIT 1
+                        ''')
+        new_user_entry = self.c.fetchone()
+        return new_user_entry
+
+    @staticmethod
     def encrypt_password(self, pw, salt=os.urandom(16)):
         pw = pw.encode('utf-8')
         kdf = PBKDF2HMAC(
@@ -109,6 +102,23 @@ class DB:
         print(key)
         return key, salt
 
+    def insert_into_chat_history(self, data):
+        self.c.execute('''INSERT INTO chat_history(
+              id,
+              message
+              ) VALUES (?,?)''', data)
+        self.con.commit()
+
+    def get_known_users(self):
+        self.c.execute("SELECT * FROM user_credentials")
+        query = self.c.fetchall()
+        # Get dictionary of entries using user_name as index
+        users = {u["user_name"]: u for u in query}
+        return users
+
+    # =======================
+    # Credential validation
+    # =======================
     def compare_credentials(self, username, password):
         correct_credentials = self.fetch_correct_credentials(username)
         if self.verified_successfully(correct_credentials, password):
@@ -124,6 +134,7 @@ class DB:
         correct_credentials = self.c.fetchone()
         return correct_credentials
 
+    @staticmethod
     def verified_successfully(self, correct_credentials, password):
         password = password.encode('utf-8')
         kdf = PBKDF2HMAC(

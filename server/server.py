@@ -82,11 +82,9 @@ class ChatProtocol(asyncio.Protocol):
                 print("Connection closed. . .")
                 break
 
-    async def is_command(self, message):
-        if message.startswith(COMMAND_FLAG):
-            return True
-        else:
-            return False
+    @staticmethod
+    async def is_command(message):
+        return message.startswith(COMMAND_FLAG)
 
     async def execute_command(self, message, writer):
         result = await self.command_handler.process_command(message, writer, self._clients, self.user_list)
@@ -144,10 +142,12 @@ class ChatProtocol(asyncio.Protocol):
             receiver.writer.write(encrypted_message)
             sender.write(encrypted_message)
 
-    def strip_private_message_handle(self, message):
+    @staticmethod
+    def strip_private_message_handle(message):
         return message[message.find(",")+1:]
 
-    def sender_ignored(self, client, sender):
+    @staticmethod
+    def sender_ignored(client, sender):
         if sender in client.ignored_users:
             return True
         else:
@@ -158,7 +158,6 @@ class ChatProtocol(asyncio.Protocol):
         client = Client(writer, name=username)
         self._clients.add(client)
         return client
-
 
 
 async def main():
@@ -173,6 +172,7 @@ async def main():
 
     async with listener:
         await listener.serve_forever()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

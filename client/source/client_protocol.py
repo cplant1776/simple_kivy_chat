@@ -1,5 +1,6 @@
 import asyncio
 from client.source.chat_history import ClientChatHistory
+from client.source.command_handler import CommandHandler
 from cryptography.fernet import Fernet
 from time import sleep
 import threading
@@ -27,6 +28,7 @@ COMMAND_CODE = {
 class ClientProtocol(asyncio.Protocol):
     def __init__(self, thread_shared_data):
         super().__init__()
+        self.command_handler = CommandHandler()
         self.reader = self.writer = None
         self.ready_to_connect = False
         self.thread_shared_data = thread_shared_data
@@ -59,41 +61,39 @@ class ClientProtocol(asyncio.Protocol):
         # while self.authorized:
         while True:
                 data = await self.reader.read(MAX_SEND_SIZE)
-                print("bla")
                 if data:
                     decrypted_data = self.fernet.decrypt(data)
                     print("receive: {}".format(decrypted_data))
-                    route = await self.route_data(decrypted_data)
+                    decoded_data = decrypted_data.decode('utf-8')
+                    route = await self.route_data(decoded_data)
                 else:
                     break
 
     async def route_data(self, data):
-        decoded_data = data.decode('utf-8')
-        if decoded_data.startswith(COMMAND_FLAG):
-            await self.execute_specified_command(data)
+        if await self.is_command(data):
+            await self.execute_command(data)
         else:
             self.update_chat_history(data)
 
-    async def execute_specified_command(self, data):
-        command = data.decode('utf-8')[40:60]
-        if command == COMMAND_CODE['update_user_list']:
-            self.update_user_list(data)
-        elif command == COMMAND_CODE['invalid_credentials']:
-            await self.sent_invalid_credentials()
-        elif command == COMMAND_CODE['valid_credentials']:
-            self.successfully_authenticated()
+    @staticmethod
+    async def is_command(data):
+        return data.startswith(COMMAND_FLAG)
 
-    def update_user_list(self, data):
-        user_list = data.decode('utf-8')[60:]
-        self.user_list = user_list
+    async def execute_command(self, data):
+        result = await self.command_handler.process_command(data)
+        if result['type'] == 'update_user_list':
+            self.user_list = result['data']['user_list']
+        elif result['type'] == 'invalid':
+            await self.invalid_credentials_routine()
+        elif result['type'] == 'valid':
+            await self.valid_credentials_routine()
 
-    async def sent_invalid_credentials(self):
-        print("rejected")
+    async def invalid_credentials_routine(self):
         self.ready_to_connect = False
         self.invalid_credentials = True
         self.run_listener_thread()
 
-    def successfully_authenticated(self):
+    async def valid_credentials_routine(self):
         self.ready_to_connect = False
         self.login_success = True
 
@@ -123,7 +123,8 @@ class ClientProtocol(asyncio.Protocol):
         print("write {}".format(encrypted_message))
         self.writer.write(encrypted_message)
 
-    def strip_private_message_handle(self, message):
+    @staticmethod
+    def strip_private_message_handle(message):
         return message[message.find(",")+1:]
 
     def toggle_user_ignore(self, user):
@@ -132,13 +133,15 @@ class ClientProtocol(asyncio.Protocol):
         print('send ignore request')
         self.writer.write(encrypted_request)
 
-    def is_private_message(self, message):
+    @staticmethod
+    def is_private_message(message):
         if message.startswith("@"):
             return True
         else:
             return False
 
-    def get_receiving_user(self, message):
+    @staticmethod
+    def get_receiving_user(message):
         return message[message.find("@")+1:message.find(",")]
 
     def send_closed_command(self):
