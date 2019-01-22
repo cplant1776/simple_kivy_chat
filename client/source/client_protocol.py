@@ -175,9 +175,6 @@ class ClientProtocol(asyncio.Protocol):
             encrypted_command = self.fernet.encrypt(closed_connection_command.encode('utf-8'))
             print("send close command")
             self.writer.write(encrypted_command)
-        else:
-            # TODO: Remove this else clause
-            return
 
 
 def strip_private_message_handle(message):

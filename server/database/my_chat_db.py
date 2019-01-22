@@ -127,11 +127,7 @@ class DB:
     def compare_credentials(self, username, password):
         """Returns True if passed password matches saved password"""
         correct_credentials = self.fetch_correct_credentials(username)
-        # TODO: Change this if structure to a one-liner
-        if self.verified_successfully(correct_credentials, password):
-            return True
-        else:
-            return False
+        return True if self.verified_successfully(correct_credentials, password) else False
 
     def fetch_correct_credentials(self, user_name):
         """Returns credentials for passed user_name from database"""

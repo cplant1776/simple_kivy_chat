@@ -87,6 +87,7 @@ class ChatRoomScreen(Screen):
             self.chat_history = self.parent.client_protocol.chat_history.history_string
 
         if self.user_list != self.parent.client_protocol.user_list:
+            print("User List mismatch")
             self.user_list = self.parent.client_protocol.user_list
             self.update_user_list_buttons()
 

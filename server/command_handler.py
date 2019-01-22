@@ -128,7 +128,6 @@ class CommandHandler:
         """Store new user's credentials in database"""
         credentials = message.split('||')
         key, salt = db.encrypt_password(credentials[2])
-        # TODO: If there's a problem, it probably started here
         db.add_new_user_credentials((credentials[1], credentials[1], key, salt))
 
     def is_valid_credentials(self, message):

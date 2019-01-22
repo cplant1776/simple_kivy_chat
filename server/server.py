@@ -82,9 +82,11 @@ class ChatProtocol(asyncio.Protocol):
                 # Gracefully close connection if client improperly disconnected
                 except ConnectionResetError:
                     print("Improper client shutdown!")
+                    print("")
                     self.user_list = self.command_handler.close_connection(self._clients,
                                                                            writer,
                                                                            self.user_list)['data']['user_list']
+                    self.send_updated_user_list()
                     break
 
                 # Decrypt data
@@ -122,6 +124,7 @@ class ChatProtocol(asyncio.Protocol):
             self.send_private_message(message, result['data']['receiving_client'], writer)
         elif result['type'] == 'close':
             self.user_list = result['data']['user_list']
+            self.send_updated_user_list()
         elif result['type'] in ['new', 'valid_credentials']:
             current_client = await self.add_new_connection(writer, message)
             await self.update_connected_user_list(current_client)
@@ -135,12 +138,9 @@ class ChatProtocol(asyncio.Protocol):
         for client in self._clients:
             if client.writer == writer:
                 self.last_message_sender = client.name
-        #         TODO: See if removing the returns breaks things
-                return None
-        return ""
 
     async def update_connected_user_list(self, current_client):
-        """Add new user to user list and send updated list to connected clients"""
+        """Add a user to user list and send updated list to connected clients"""
         self.user_list.append(current_client.name)
         self.send_updated_user_list()
 
@@ -213,11 +213,15 @@ def prepare_sender_message(message):
 
 def sender_ignored(client, sender):
     """Return True if sender client is ignored by receiver client"""
-    # TODO: Make function a one liner
-    if sender in client.ignored_users:
-        return True
-    else:
-        return False
+    return True if sender in client.ignored_users else False
+
+
+def find_client_from_writer(writer, client_list):
+    """Return client whose writer matches first argument, else returns None"""
+    for client in client_list:
+        if client.writer == writer:
+            return client
+    return None
 
 
 async def main():

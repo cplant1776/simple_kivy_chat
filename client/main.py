@@ -10,6 +10,7 @@ from kivy.config import Config
 KV_FILE = 'client.kv'
 Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
 
+
 def load_kv_file(kv):
     """Loads master kv file in ./kv"""
     # Workaround because kivy had trouble with relative paths
