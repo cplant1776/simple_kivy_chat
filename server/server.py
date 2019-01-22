@@ -71,7 +71,7 @@ class ChatProtocol(asyncio.Protocol):
     async def handle_input(self, reader, writer):
         """Routine when server receives input from a connection
 
-            The main loop that listens for activity on the client stream and reacts accordingly.
+            The main loop that listens for activity on the client stream
         """
         while True:
             # If client connection isn't trying to close
@@ -82,14 +82,12 @@ class ChatProtocol(asyncio.Protocol):
                 # Gracefully close connection if client improperly disconnected
                 except ConnectionResetError:
                     print("Improper client shutdown!")
-                    print("")
                     self.user_list = self.command_handler.close_connection(self._clients,
                                                                            writer,
                                                                            self.user_list)['data']['user_list']
                     self.send_updated_user_list()
                     break
-
-                # Decrypt data
+                # Decrypt received data
                 data = self.fernet.decrypt(encrypted_data)
                 message = data.decode('utf-8')
                 # Find data sender
@@ -103,7 +101,8 @@ class ChatProtocol(asyncio.Protocol):
                     self.save_message_to_history(message)
                     self.broadcast_message(message)
                 print("Restarting Loop")
-            # Close client connection
+
+            # Close closing writer
             else:
                 print("Connection closed. . .")
                 break
@@ -112,7 +111,7 @@ class ChatProtocol(asyncio.Protocol):
         """"Respond to received command
 
             Process command in CommandHandler then execute final steps here. Types:
-            private -- Message is private and should not be broadcast
+            private -- Message is private and should not be broadcasted
             close -- client wishes to disconnect
             new -- new user
             valid_credentials -- new client gave valid login credentials

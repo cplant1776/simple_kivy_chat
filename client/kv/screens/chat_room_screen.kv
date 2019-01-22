@@ -26,6 +26,7 @@
                     size_hint_x: 0.85
                     use_bubble: True
                     write_tab: False
+#                    multiline: False
                     on_text_validate: app.root.client_protocol.send_message(message.text)
 
                 Button:
@@ -36,7 +37,7 @@
 
             BoxLayout:
                 id: chat_bottom
-                size_hint_x: 1
+                size_hint_x: 0.98
 
                 TextInput:
                     background_color: (0,0,0,1)
@@ -52,24 +53,13 @@
                     orientation: 'vertical'
                     size_hint_x: 0.2
                     spacing: "5dp"
-                    canvas.before:
-                        Color:
-                            rgba: 1,0,0,1
-                        Rectangle:
-                            pos: self.pos
-                            size: self.size
 
                     Label:
-                        text: "Connected Users"
-#                        pos_hint: {'top': 0.9}
+                        markup: True
+                        text: "[b]Connected Users[/b]"
+                        font_size: 20
                         size_hint_y: 0.1
-#                        pos_hint: {'center_x': 0.4}
-                        canvas.before:
-                            Color:
-                                rgba: 0,1,0,1
-                            Rectangle:
-                                pos: self.pos
-                                size: self.size
+
                     ScrollView:
                         id: user_list_container
                         size_hint_y: 0.9
@@ -126,7 +116,7 @@
 <ServerShutdownPopup@ModalView>:
     size_hint: None, None
     height: '50dp'
-    width: '200dp'
+    width: '1000dp'
 
     Label:
         text: "Server shutdown! You will now be disconnected."
