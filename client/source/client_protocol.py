@@ -155,6 +155,7 @@ class ClientProtocol(asyncio.Protocol):
 
     def send_message(self, message):
         """Submit message to server"""
+        message += "\n"
         if is_private_message(message):
             message = COMMAND_FLAG + COMMAND_CODE['private_message'] + message
         encrypted_message = self.fernet.encrypt(message.encode('utf-8'))
