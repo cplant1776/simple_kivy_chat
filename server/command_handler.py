@@ -1,5 +1,6 @@
 import asyncio
 from os import path
+import os
 from database.my_chat_db import DB
 from cryptography.fernet import Fernet
 
@@ -15,7 +16,7 @@ COMMAND_CODE = {
                 "server_shutdown": "nST1UgKcdDOlrf3ndUYi"
                 }
 
-DATABASE_NAME = path.join("database", "chap_app.db")
+DATABASE_NAME = path.join(os.getcwd(), "database", "chat_app.db")
 db = DB(DATABASE_NAME)
 
 

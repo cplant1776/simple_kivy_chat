@@ -1,10 +1,14 @@
 import asyncio
+import os
 from os import path
 from database.my_chat_db import DB
 from command_handler import CommandHandler
 from cryptography.fernet import Fernet
 import atexit
+import sys
 
+# ensure working directory is script directory
+# os.chdir(os.path.dirname(sys.argv[0]))
 
 # ================
 # HIDDEN VARIABLES
@@ -22,10 +26,11 @@ COMMAND_CODE = {
                 "server_shutdown": "nST1UgKcdDOlrf3ndUYi"
                 }
 
-DATABASE_NAME = path.join("database", "chap_app.db")
+DATABASE_NAME = path.join(os.getcwd(), "database", "chat_app.db")
 SERVER_IP = '127.0.0.1'
 SERVER_PORT = 1776
 MAX_SEND_SIZE = 1000000
+
 
 db = DB(DATABASE_NAME)
 

@@ -22,7 +22,14 @@ def dict_factory(cursor, row):
 class DB:
     """Handles all database-related functions"""
     def __init__(self, database_name):
-        self.con = sqlite3.connect(database_name)
+        print("DATABASE_NAME: {}".format(database_name))
+        # Connect to database
+        try:
+            self.con = sqlite3.connect(database_name)
+        except sqlite3.OperationalError:
+            explicit_path = os.path.join(os.getcwd(), 'server', 'database', 'chat_app.db')
+            self.con = sqlite3.connect(explicit_path)
+
         self.con.row_factory = dict_factory
         self.c = self.con.cursor()
 
@@ -163,10 +170,10 @@ class DB:
 
 
 if __name__ == '__main__':
-    db = DB('chap_app.db')
-    # db.clear_tables()
-    # db.create_tables()
-    db.show_chat_history()
-    db.show_user_credentials()
+    db = DB('chat_app.db')
+    db.clear_tables()
+    db.create_tables()
+    # db.show_chat_history()
+    # db.show_user_credentials()
 
 
