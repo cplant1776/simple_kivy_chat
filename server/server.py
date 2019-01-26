@@ -1,14 +1,23 @@
+# Standard Library Imports
 import asyncio
 import os
 from os import path
-from database.my_chat_db import DB
-from command_handler import CommandHandler
-from cryptography.fernet import Fernet
 import atexit
 import sys
 
-# ensure working directory is script directory
-# os.chdir(os.path.dirname(sys.argv[0]))
+# Third Party Imports
+from cryptography.fernet import Fernet
+
+# Local Imports
+from command_handler import CommandHandler
+from database.my_chat_db import DB
+
+# Standard Library Imports
+
+# Third Party Imports
+
+# Local Imports
+
 
 # ================
 # HIDDEN VARIABLES

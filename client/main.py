@@ -1,11 +1,16 @@
-from kivy.app import App
-from kivy.lang import Builder
+# Standard Library Imports
 import os.path
+import queue
+import threading
+
+# Third Party Imports
+from kivy.app import App
+from kivy.config import Config
+from kivy.lang import Builder
+
+# Local Imports
 import client.source.ui.screens as screens
 from client.source.client_protocol import ClientProtocol
-import threading
-import queue
-from kivy.config import Config
 
 KV_FILE = 'client.kv'
 Config.set('input', 'mouse', 'mouse,multitouch_on_demand')

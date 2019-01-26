@@ -1,9 +1,13 @@
-from kivy.uix.screenmanager import Screen, ScreenManager
+# Standard Library Imports
+
+# Third Party Imports
 from kivy.clock import Clock
 from kivy.properties import StringProperty
+from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.widget import Widget
-from client.source.ui.kv_widgets import ModalPopupButton, SubmissionPopup, FailedSubmissionPopup, ServerShutdownPopup
 
+# Local Imports
+from client.source.ui.kv_widgets import ModalPopupButton, SubmissionPopup, FailedSubmissionPopup, ServerShutdownPopup
 
 # ====================================
 # CONSTANTS

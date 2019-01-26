@@ -1,7 +1,12 @@
+# Standard Library Imports
+
+# Third Party Imports
+from kivy.properties import ObjectProperty, StringProperty
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.modalview import ModalView
-from kivy.uix.boxlayout import BoxLayout
-from kivy.properties import ObjectProperty, StringProperty
+
+# Local Imports
 
 
 class ModalPopupButton(Button):

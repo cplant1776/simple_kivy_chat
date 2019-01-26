@@ -1,8 +1,14 @@
+# Standard Library Imports
 import asyncio
 from os import path
 import os
-from database.my_chat_db import DB
+
+# Third Party Imports
 from cryptography.fernet import Fernet
+
+# Local Imports
+from database.my_chat_db import DB
+
 
 COMMAND_FLAG = "jfUpSzZxA5VKNEJPDa9y1AWRhyJjQrQPBjBvXC0p"
 COMMAND_CODE = {

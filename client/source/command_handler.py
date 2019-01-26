@@ -1,4 +1,9 @@
+# Standard Library Imports
 import asyncio
+
+# Third Party Imports
+
+# Local Imports
 
 COMMAND_CODE = {
                 "update_user_list": "SlBxeHfLVJUIYVsn7431",

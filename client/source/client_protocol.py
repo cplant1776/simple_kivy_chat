@@ -1,9 +1,14 @@
+# Standard Library Imports
 import asyncio
+import threading
+from time import sleep
+
+# Third Party Imports
+from cryptography.fernet import Fernet
+
+# Local Imports
 from client.source.chat_history import ClientChatHistory
 from client.source.command_handler import CommandHandler
-from cryptography.fernet import Fernet
-from time import sleep
-import threading
 
 # ================
 # HIDDEN VARIABLES
