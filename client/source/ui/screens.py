@@ -108,3 +108,9 @@ class ChatRoomScreen(Screen):
         print("SERVER SHUTDOWN")
         self.popup = ServerShutdownPopup()
         self.popup.open()
+
+    def schedule_clear_input_box(self):
+        Clock.schedule_once(self.clear_input_box, 0.25)
+
+    def clear_input_box(self, *args):
+        self.ids.message.text = ''

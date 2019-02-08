@@ -5,6 +5,7 @@
 # CHAT ROOM SCREEN
 #===================================
 <ChatRoomScreen>:
+    id: chat_room_screen
     on_enter: self.on_enter
     BoxLayout:
         orientation: 'vertical'
@@ -28,12 +29,14 @@
                     write_tab: False
 #                    multiline: False
                     on_text_validate: app.root.client_protocol.send_message(message.text)
+                    on_text_validate: chat_room_screen.schedule_clear_input_box()
 
                 Button:
                     id: send_button
                     size_hint_x: 0.15
                     text: 'Send'
                     on_press: app.root.client_protocol.send_message(message.text)
+                    on_press: chat_room_screen.schedule_clear_input_box()
 
             BoxLayout:
                 id: chat_bottom
