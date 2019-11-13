@@ -6,65 +6,83 @@
     BoxLayout
         id: login_layout
         orientation: 'vertical'
-        padding: ['10dp','35dp','10dp','35dp']
-        spacing: '35dp'
 
         Label:
-            text: 'Simple Chat Client'
-#            text: app.root.session.style
-            font_size: 60
-
+            size_hint: 1, 0.2
+            text: 'Simple Kivy Chat'
+            font_size: "60dp"
+            pos_hint: {"top": 0.1}
         BoxLayout:
-            orientation: 'vertical'
-            padding: 10
-
-            Label:
-                text: 'Server IP Address'
-
-            TextInput:
-                id: server_ip
-                multiline: False
-                write_tab: False
-                size_hint: 0.5, 1
-                text: '127.0.0.1'
-                pos_hint: {'center_x': 0.5}
-
-        BoxLayout:
-            orientation: 'vertical'
-            padding: 10
-
-            Label:
-                text: 'Username'
-
-            TextInput:
-                id: username
-                multiline:False
-                write_tab: False
-                size_hint: 0.5, 1
-                text: 'josh'
-                pos_hint: {'center_x': 0.5}
-
-        BoxLayout:
-            orientation: 'vertical'
-            padding: 10
-
-            Label:
-                text: 'Password'
-
-            TextInput:
-                id: password
-                multiline:False
-                write_tab: False
-                password: True
-                size_hint: 0.5, 1
-                text: 'brown'
-                pos_hint: {'center_x': 0.5}
-
-        Button:
-            text: 'Submit'
-            pos_hint: {'center_x': 0.5}
-            size_hint: 0.4,0.5
-            on_release: root.attempt_to_connect(server_ip.text, username.text, password.text)
+            orientation: 'horizontal'
+            Widget:
+                size_hint: 0.2, 1
+            BoxLayout:
+                orientation: 'vertical'
+                Label:
+                    text: 'Server IP Address'
+                    font_size: "20dp"
+                TextInput:
+                    id: server_ip
+                    multiline: False
+                    write_tab: False
+                    size_hint: 0.4, 0.5
+                    text: '127.0.0.1'
+                    pos_hint: {'center_x': 0.5}
+                Label:
+                    text: 'Username'
+                    font_size: "20dp"
+                TextInput:
+                    id: username
+                    multiline:False
+                    write_tab: False
+                    size_hint: 0.4, 0.5
+                    text: 'josh'
+                    pos_hint: {'center_x': 0.5}
+                Label:
+                    text: 'Password'
+                    font_size: "20dp"
+                TextInput:
+                    id: password
+                    multiline:False
+                    write_tab: False
+                    password: True
+                    size_hint: 0.4, 0.5
+                    text: 'brown'
+                    pos_hint: {'center_x': 0.5}
+                BoxLayout:
+                    orientation: 'horizontal'
+                    pos_hint: {"center": 0.5}
+                    Widget:
+                    CheckBox:
+                        id: remember_username
+                        text: ''
+                        on_active:
+                            self.text = 'username'
+                    Label:
+                        text: 'Remember Username'
+                    Widget:
+                    Widget:
+                BoxLayout:
+                    orientation: 'horizontal'
+                    Widget:
+                    CheckBox:
+                        id: remember_password
+                        text: ''
+                        on_active:
+                            self.text = 'password'
+                    Label:
+                        text: 'Remember Password'
+                    Widget:
+                    Widget:
+                Button:
+                    text: 'Submit'
+                    pos_hint: {'center_x': 0.5}
+                    size_hint: 0.4, 0.5
+                    on_release: root.attempt_to_connect(server_ip.text, username.text, password.text)
+            Widget:
+                size_hint: 0.2, 1
+        Widget:
+            size_hint: 1, 0.1
 
 <SubmissionPopup@ModalView>:
     size_hint: None, None
