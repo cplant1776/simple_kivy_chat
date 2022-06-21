@@ -12,7 +12,7 @@ kivy.deps.angle==0.1.7
 kivy.deps.glew==0.1.10
 kivy.deps.gstreamer==0.1.13
 kivy.deps.sdl2==0.1.18
-numpy==1.15.4
+numpy==1.22.0
 pandas==0.23.4
 pycparser==2.19
 Pygments==2.3.1
